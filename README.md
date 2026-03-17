@@ -323,10 +323,11 @@ Docker 目录位于 ruoyi-docker，已包含：
 
 ```powershell
 cd ruoyi-docker
-Copy-Item ..\sql\ry_eqsy_repair.sql .\mysql-init\ry_eqsy_repair.sql
 Copy-Item .env.example .env
 docker compose up -d --build
 ```
+
+说明：`mysql-init/ry_eqsy_repair.sql` 已由人工提前放置，无需再次复制。
 
 ### 默认访问
 
