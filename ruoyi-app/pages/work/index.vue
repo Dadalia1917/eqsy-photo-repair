@@ -40,7 +40,10 @@
         <text>{{ resultText }}</text>
       </view>
       <view class="result-actions">
-        <view class="btn btn-refresh action-btn" :class="isRefreshing ? 'is-disabled' : ''" @tap="handleRefreshClick">{{ isRefreshing ? '刷新中...' : '刷新处理结果' }}</view>
+        <view class="btn btn-refresh action-btn" :class="isRefreshing ? 'is-disabled' : ''" @tap="handleRefreshClick">
+          <text v-if="isRefreshing" class="refresh-spin">⟳</text>
+          <text>{{ isRefreshing ? '刷新中...' : '刷新处理结果' }}</text>
+        </view>
         <view class="btn btn-save action-btn" :class="!resultImageUrl ? 'is-disabled' : ''" @tap="saveResultImage">保存到相册</view>
       </view>
     </view>
@@ -260,6 +263,10 @@ page { background-color: #f5f6f7; }
 }
 .action-btn {
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
 }
 .btn-refresh {
   background: #eef7f5;
@@ -277,5 +284,19 @@ page { background-color: #f5f6f7; }
 
 .btn-refresh.is-disabled {
   opacity: 0.7;
+}
+
+.refresh-spin {
+  display: inline-block;
+  animation: refresh-spin 0.9s linear infinite;
+}
+
+@keyframes refresh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

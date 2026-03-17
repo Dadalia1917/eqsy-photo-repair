@@ -1,39 +1,292 @@
-# e起守忆影像修复平台
+# e起守忆影像修复平台（社区志愿者版）
 
-面向社区老人服务的老照片修复系统，采用统一志愿者处理模式：
-- 小程序端：上传照片 + 留言需求，系统直接提交给学生志愿者后台处理。
-- 后台管理端：任务查看、接单处理、进度更新与结果回传。
-- Java 后端：鉴权、任务流转、数据管理。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Java](https://img.shields.io/badge/JDK-17-orange.svg)]()
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.x-brightgreen.svg)]()
+[![Vue](https://img.shields.io/badge/Vue-3.x-42b883.svg)]()
+[![uni-app](https://img.shields.io/badge/uni--app-Vue3-2B9939.svg)]()
 
-项目背景：
-- 基于 RuoYi 框架进行二次开发。
-- 用于江苏省常州市武进区社区志愿者活动场景。
-- 由江苏理工学院委托开发。
+---
 
-## 1. 项目结构
+## 目录
 
-- ruoyi-app：uni-app 小程序端。
-- ruoyi-ui：Vue3 + Element Plus 后台管理端。
-- ruoyi-admin：Spring Boot 管理接口层。
-- ruoyi-system：系统与业务核心模块。
-- ruoyi-framework：安全、登录、注册、权限框架。
-- ruoyi-common：公共模型、工具、常量。
-- sql/ry_eqsy_repair.sql：数据库初始化脚本。
-- ruoyi-docker：Docker 部署目录（新增）。
+- 项目简介
+- 技术栈
+- 项目结构
+- 系统架构图
+- UML 用例图
+- 核心时序图
+- 领域类图
+- 数据库 ER 图
+- 部署架构图（Docker）
+- 业务流程
+- 快速开始
+- Docker 部署
+- 项目背景说明
+- 更新记录
 
-说明：ruoyi-fastapi 已从当前方案移除，不再作为运行依赖。
+---
 
-## 2. 当前业务流程
+## 项目简介
 
-1. 老人在小程序工作台上传老照片。
-2. 可填写修复诉求留言。
-3. 点击提交后统一进入志愿者处理队列。
-4. 学生志愿者在后台接单、处理并上传结果。
-5. 老人在小程序端刷新查看并保存修复结果。
+e起守忆影像修复平台是面向社区老人的公益修复系统，采用统一志愿者处理模式：
 
-## 3. 本地开发启动
+- 老人在小程序上传老照片并填写需求。
+- 任务直接进入学生志愿者处理队列。
+- 志愿者在后台认领、修复并回传结果。
+- 老人端刷新后预览并保存修复成果。
 
-### 3.1 后端
+当前版本已经移除 AI/人工选择分支，交互更简单，适老化更强。
+
+---
+
+## 技术栈
+
+### 后端
+
+- Spring Boot 3.5.x
+- Spring Security + JWT
+- MyBatis
+- MySQL 8
+- Redis 7
+
+### 前端
+
+- ruoyi-ui: Vue3 + Element Plus + Vite
+- ruoyi-app: uni-app (微信小程序/H5)
+
+### 运维部署
+
+- Docker
+- Docker Compose
+- Nginx
+
+---
+
+## 项目结构
+
+- ruoyi-admin: Spring Boot 启动与 Web 接口层
+- ruoyi-system: 修复任务等核心业务模块
+- ruoyi-framework: 安全与权限框架
+- ruoyi-common: 公共组件与工具
+- ruoyi-ui: 后台管理前端
+- ruoyi-app: 小程序前端
+- ruoyi-docker: 容器化部署目录
+- sql/ry_eqsy_repair.sql: 初始化脚本
+
+---
+
+## 系统架构图
+
+```mermaid
+graph TB
+    subgraph Client[客户端层]
+        Mini[微信小程序 ruoyi-app]
+        AdminWeb[后台管理 ruoyi-ui]
+    end
+
+    subgraph Server[服务层]
+        Java[ruoyi-admin Spring Boot]
+        Redis[(Redis)]
+        MySQL[(MySQL)]
+        Upload[(文件存储 UploadPath)]
+    end
+
+    Mini -->|HTTP/JWT| Java
+    AdminWeb -->|HTTP/JWT| Java
+    Java --> Redis
+    Java --> MySQL
+    Java --> Upload
+```
+
+---
+
+## UML 用例图
+
+```mermaid
+graph LR
+    Elder[老人用户]
+    Student[学生志愿者]
+    Admin[管理员]
+
+    U1((上传照片))
+    U2((提交修复需求))
+    U3((刷新查看结果))
+    U4((保存到相册))
+
+    U5((认领任务))
+    U6((上传修复结果))
+    U7((完成回传))
+
+    U8((任务监管))
+    U9((用户与权限管理))
+
+    Elder --> U1
+    Elder --> U2
+    Elder --> U3
+    Elder --> U4
+
+    Student --> U5
+    Student --> U6
+    Student --> U7
+
+    Admin --> U8
+    Admin --> U9
+```
+
+---
+
+## 核心时序图
+
+### 提交与处理时序
+
+```mermaid
+sequenceDiagram
+    participant E as 老人小程序
+    participant J as Java后端
+    participant DB as MySQL
+    participant S as 学生后台
+
+    E->>J: 提交任务(照片+remark)
+    J->>DB: 写入 RepairTask (WAIT_STUDENT)
+    J-->>E: 返回 taskId
+
+    S->>J: 查询待认领任务
+    J->>DB: 查询 WAIT_STUDENT
+    J-->>S: 返回任务列表
+
+    S->>J: 认领任务
+    J->>DB: 更新 student_id/status
+    J-->>S: 认领成功
+
+    S->>J: 上传修复结果
+    J->>DB: 写入 result_urls
+
+    S->>J: 完成回传
+    J->>DB: 更新状态 COMPLETED
+
+    E->>J: 刷新处理结果
+    J->>DB: 查询最新任务
+    J-->>E: 返回结果图片
+```
+
+---
+
+## 领域类图
+
+```mermaid
+classDiagram
+    class RepairTask {
+      +Long taskId
+      +String taskNo
+      +Long userId
+      +String userName
+      +String repairMode
+      +String taskType
+      +String sourceType
+      +String sourceUrls
+      +String remark
+      +String resultUrls
+      +String status
+      +Integer progress
+      +Long studentId
+      +String studentName
+      +Date createTime
+      +Date finishedTime
+    }
+
+    class AppRepairTaskController {
+      +submit(body)
+      +list(query)
+      +detail(taskId)
+    }
+
+    class RepairTaskController {
+      +list(query)
+      +claim(taskId)
+      +uploadResult(body)
+      +finish(taskId)
+    }
+
+    class IRepairTaskService {
+      +submitTask(task,userId,userName)
+      +claimTask(taskId,studentId,studentName)
+      +uploadManualResult(taskId,studentId,resultUrls)
+      +finishManualTask(taskId,studentId)
+    }
+
+    class RepairTaskServiceImpl
+    class RepairTaskMapper
+
+    AppRepairTaskController --> IRepairTaskService
+    RepairTaskController --> IRepairTaskService
+    RepairTaskServiceImpl ..|> IRepairTaskService
+    RepairTaskServiceImpl --> RepairTaskMapper
+    RepairTaskMapper --> RepairTask
+```
+
+---
+
+## 数据库 ER 图
+
+```mermaid
+erDiagram
+    SYS_USER ||--o{ REPAIR_TASK : "submit/claim"
+
+    SYS_USER {
+      bigint user_id PK
+      varchar user_name
+      varchar phonenumber
+    }
+
+    REPAIR_TASK {
+      bigint task_id PK
+      varchar task_no
+      bigint user_id FK
+      varchar user_name
+      varchar repair_mode
+      varchar task_type
+      varchar source_type
+      text source_urls
+      text remark
+      text result_urls
+      varchar status
+      int progress
+      bigint student_id
+      varchar student_name
+      datetime create_time
+      datetime finished_time
+    }
+```
+
+---
+
+## 部署架构图（Docker）
+
+```mermaid
+graph LR
+    User[浏览器/小程序] --> Nginx[ruoyi-ui Nginx]
+    Nginx --> Java[ruoyi-admin]
+    Java --> MySQL[(MySQL)]
+    Java --> Redis[(Redis)]
+    Java --> Volume[(Upload Volume)]
+```
+
+---
+
+## 业务流程
+
+1. 小程序上传照片。
+2. 填写留言需求并提交。
+3. 后台学生认领并处理。
+4. 上传修复结果，完成回传。
+5. 小程序刷新查看并保存。
+
+---
+
+## 快速开始
+
+### 1) 启动后端
 
 ```powershell
 mvn clean package -DskipTests
@@ -41,9 +294,7 @@ cd ruoyi-admin
 mvn spring-boot:run
 ```
 
-默认接口地址：http://localhost:8080
-
-### 3.2 后台前端
+### 2) 启动后台前端
 
 ```powershell
 cd ruoyi-ui
@@ -51,58 +302,54 @@ npm install
 npm run dev
 ```
 
-### 3.3 小程序端
+### 3) 小程序调试
 
 - 使用 HBuilderX 或微信开发者工具打开 ruoyi-app。
-- 在 ruoyi-app/config.js 中配置后端地址。
+- 配置 ruoyi-app/config.js 的后端地址。
 
-## 4. Docker 服务器部署
+---
 
-已提供独立目录：ruoyi-docker
+## Docker 部署
 
-### 4.1 目录内容
+Docker 目录位于 ruoyi-docker，已包含：
 
-- ruoyi-docker/docker-compose.yml：MySQL + Redis + ruoyi-admin + ruoyi-ui 一键编排。
-- ruoyi-docker/ruoyi-admin/Dockerfile：后端镜像构建。
-- ruoyi-docker/ruoyi-ui/Dockerfile：后台前端镜像构建。
-- ruoyi-docker/nginx/default.conf：前端 Nginx 反向代理配置。
-- ruoyi-docker/.env.example：环境变量模板。
+- docker-compose.yml
+- ruoyi-admin/Dockerfile
+- ruoyi-ui/Dockerfile
+- nginx/default.conf
+- .env.example
 
-### 4.2 部署步骤
-
-1. 复制数据库初始化脚本到 ruoyi-docker/mysql-init。
+### 部署步骤
 
 ```powershell
 cd ruoyi-docker
 Copy-Item ..\sql\ry_eqsy_repair.sql .\mysql-init\ry_eqsy_repair.sql
-```
-
-2. 复制并修改环境变量。
-
-```powershell
 Copy-Item .env.example .env
-```
-
-3. 构建并启动。
-
-```powershell
 docker compose up -d --build
 ```
 
-4. 查看运行状态。
+### 默认访问
 
-```powershell
-docker compose ps
-docker compose logs -f ruoyi-admin
-```
+- 后台前端: http://服务器IP:80
+- 后端接口: http://服务器IP:8080
 
-### 4.3 默认访问
+---
 
-- 后台前端：http://服务器IP:80
-- 后端接口：http://服务器IP:8080
+## 项目背景说明
 
-## 5. 备注
+- 基于 RuoYi 框架进行二次开发。
+- 服务于江苏省常州市武进区社区志愿者活动场景。
+- 由江苏理工学院委托开发。
 
-- 生产环境建议修改 MySQL/Redis 密码并限制端口暴露。
-- 上传目录已通过 Docker volume 持久化。
-- 如需 HTTPS，请在网关或 Nginx 层补充证书配置。
+---
+
+## 更新记录
+
+### 2026-03-17
+
+- 去除小程序 AI/人工选择，统一为志愿者处理。
+- 优化工作台步骤文案为 1/2/3。
+- 修复结果区按钮可点击性问题。
+- 新增刷新 loading 动画。
+- 新增 ruoyi-docker 容器化部署目录。
+- README 重构为软件工程文档风格（含 UML/时序图/架构图/ER 图）。
