@@ -1,0 +1,139 @@
+<template>
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
+      <el-form-item label="任务编号" prop="taskNo">
+        <el-input v-model="queryParams.taskNo" placeholder="请输入任务编号" clearable style="width: 220px" @keyup.enter="handleQuery" />
+      </el-form-item>
+      <el-form-item label="提交用户" prop="userName">
+        <el-input v-model="queryParams.userName" placeholder="请输入用户名" clearable style="width: 180px" @keyup.enter="handleQuery" />
+      </el-form-item>
+      <el-form-item label="修复模式" prop="repairMode">
+        <el-select v-model="queryParams.repairMode" placeholder="全部" clearable style="width: 160px">
+          <el-option label="志愿者修复" value="MANUAL" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="任务状态" prop="status">
+        <el-select v-model="queryParams.status" placeholder="全部" clearable style="width: 180px">
+          <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+      </el-form-item>
+    </el-form>
+
+    <el-row :gutter="10" class="mb8">
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+    </el-row>
+
+    <el-table v-loading="loading" :data="taskList" @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="编号" align="center" prop="taskId" width="80" />
+      <el-table-column label="任务编号" align="center" prop="taskNo" width="210" />
+      <el-table-column label="用户" align="center" prop="userName" width="120" />
+      <el-table-column label="模式" align="center" width="100">
+        <template #default="scope">
+          <el-tag type="warning">志愿者修复</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="文件类型" align="center" prop="sourceType" width="100" />
+      <el-table-column label="状态" align="center" width="140">
+        <template #default="scope">
+          <el-tag>{{ formatStatus(scope.row.status) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="进度" align="center" width="160">
+        <template #default="scope">
+          <el-progress :percentage="scope.row.progress || 0" :stroke-width="12" />
+        </template>
+      </el-table-column>
+      <el-table-column label="修复结果" align="center" min-width="220">
+        <template #default="scope">
+          <span class="text-grey" v-if="!scope.row.resultUrls">暂无</span>
+          <el-link v-else type="primary" :href="buildDownload(scope.row.resultUrls)" target="_blank">查看结果文件</el-link>
+        </template>
+      </el-table-column>
+      <el-table-column label="认领学生" align="center" prop="studentName" width="120" />
+      <el-table-column label="创建时间" align="center" prop="createTime" width="170">
+        <template #default="scope">{{ parseTime(scope.row.createTime) }}</template>
+      </el-table-column>
+    </el-table>
+
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+  </div>
+</template>
+
+<script setup name="RepairTask">
+import { listRepairTask } from '@/api/repair/task'
+
+const { proxy } = getCurrentInstance()
+const loading = ref(false)
+const showSearch = ref(true)
+const total = ref(0)
+const taskList = ref([])
+
+const statusOptions = [
+  { label: '等待学生认领', value: 'WAIT_STUDENT' },
+  { label: '人工处理中', value: 'MANUAL_PROCESSING' },
+  { label: '已完成', value: 'COMPLETED' }
+]
+
+const data = reactive({
+  queryParams: {
+    pageNum: 1,
+    pageSize: 10,
+    taskNo: undefined,
+    userName: undefined,
+    repairMode: undefined,
+    status: undefined
+  }
+})
+
+const { queryParams } = toRefs(data)
+
+function getList() {
+  loading.value = true
+  listRepairTask(queryParams.value).then((res) => {
+    taskList.value = res.rows
+    total.value = res.total
+    loading.value = false
+  }).catch(() => {
+    loading.value = false
+  })
+}
+
+function handleQuery() {
+  queryParams.value.pageNum = 1
+  getList()
+}
+
+function resetQuery() {
+  proxy.resetForm('queryRef')
+  handleQuery()
+}
+
+function formatStatus(status) {
+  const found = statusOptions.find(i => i.value === status)
+  return found ? found.label : status
+}
+
+function buildDownload(urls) {
+  const first = (urls || '').split(',')[0]
+  if (!first) {
+    return '#'
+  }
+  if (first.startsWith('http://') || first.startsWith('https://')) {
+    return first
+  }
+  return import.meta.env.VITE_APP_BASE_API + first
+}
+
+getList()
+</script>
+
+<style scoped>
+.text-grey {
+  color: #909399;
+}
+</style>

@@ -1,0 +1,80 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: eqsy-mysql
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ry_eqsy_repair}
+      MYSQL_USER: ${MYSQL_USER:-eqsy}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-eqsy123456}
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-123456}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: eqsy-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+
+  ruoyi-admin:
+    build:
+      context: ..
+      dockerfile: ruoyi-docker/ruoyi-admin/Dockerfile
+    container_name: eqsy-admin
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      SPRING_DATASOURCE_DRUID_MASTER_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-ry_eqsy_repair}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_DRUID_MASTER_USERNAME: ${MYSQL_USER:-eqsy}
+      SPRING_DATASOURCE_DRUID_MASTER_PASSWORD: ${MYSQL_PASSWORD:-eqsy123456}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      RUOYI_PROFILE: ${RUOYI_PROFILE:-/data/ruoyi/uploadPath}
+      SERVER_PORT: 8080
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "${JAVA_PORT:-8080}:8080"
+    volumes:
+      - ruoyi-upload:${RUOYI_PROFILE:-/data/ruoyi/uploadPath}
+
+  ruoyi-ui:
+    build:
+      context: ..
+      dockerfile: ruoyi-docker/ruoyi-ui/Dockerfile
+      args:
+        VITE_APP_BASE_API: /prod-api
+    container_name: eqsy-ui
+    restart: unless-stopped
+    depends_on:
+      - ruoyi-admin
+    ports:
+      - "${UI_PORT:-80}:80"
+
+volumes:
+  mysql-data:
+  redis-data:
+  ruoyi-upload:
