@@ -27,7 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectRepairTaskVo">
-        select task_id, task_no, user_id, user_name, repair_mode, task_type, source_type, source_urls,
+        select task_id, task_no, user_id, user_name, repair_mode, source_type, source_urls,
                result_urls, status, progress, student_id, student_name, error_message,
                finished_time, remark, create_by, create_time, update_by, update_time
         from repair_task
@@ -71,11 +71,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="insertRepairTask" parameterType="RepairTask" useGeneratedKeys="true" keyProperty="taskId">
         insert into repair_task(
-            task_no, user_id, user_name, repair_mode, task_type, source_type, source_urls,
+            task_no, user_id, user_name, repair_mode, source_type, source_urls,
             result_urls, status, progress, student_id, student_name, error_message,
             finished_time, remark, create_by, create_time, update_by, update_time
         ) values (
-            #{taskNo}, #{userId}, #{userName}, #{repairMode}, #{taskType}, #{sourceType}, #{sourceUrls},
+            #{taskNo}, #{userId}, #{userName}, #{repairMode}, #{sourceType}, #{sourceUrls},
             #{resultUrls}, #{status}, #{progress}, #{studentId}, #{studentName}, #{errorMessage},
             #{finishedTime}, #{remark}, #{createBy}, now(), #{updateBy}, #{updateTime}
         )
@@ -88,7 +88,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="userId != null">user_id = #{userId},</if>
             <if test="userName != null">user_name = #{userName},</if>
             <if test="repairMode != null">repair_mode = #{repairMode},</if>
-            <if test="taskType != null">task_type = #{taskType},</if>
             <if test="sourceType != null">source_type = #{sourceType},</if>
             <if test="sourceUrls != null">source_urls = #{sourceUrls},</if>
             <if test="resultUrls != null">result_urls = #{resultUrls},</if>
