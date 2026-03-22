@@ -123,6 +123,15 @@ function buildDownload(urls) {
   if (!first) {
     return '#'
   }
+  // 有效的服务器相对路径（如 /profile/upload/...）
+  if (first.startsWith('/profile/')) {
+    return import.meta.env.VITE_APP_BASE_API + first
+  }
+  // 微信小程序临时路径（http://tmp/...）或其他无效路径
+  if (first.startsWith('http://tmp/') || first.startsWith('wxfile://')) {
+    return '#'
+  }
+  // 其他完整URL直接返回
   if (first.startsWith('http://') || first.startsWith('https://')) {
     return first
   }

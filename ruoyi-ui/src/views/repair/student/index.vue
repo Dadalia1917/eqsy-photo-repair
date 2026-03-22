@@ -27,7 +27,8 @@
       <el-table-column label="提交用户" prop="userName" width="120" align="center" />
       <el-table-column label="源文件" min-width="220">
         <template #default="scope">
-          <el-link :href="buildDownload(scope.row.sourceUrls)" type="primary" target="_blank">查看原文件</el-link>
+          <el-link v-if="buildDownload(scope.row.sourceUrls) !== '#'" :href="buildDownload(scope.row.sourceUrls)" type="primary" target="_blank">查看原文件</el-link>
+          <span v-else class="text-grey">文件不可用</span>
         </template>
       </el-table-column>
       <el-table-column label="老人需求" prop="remark" min-width="260" show-overflow-tooltip>
@@ -162,6 +163,15 @@ function buildDownload(urls) {
   if (!first) {
     return '#'
   }
+  // 有效的服务器相对路径（如 /profile/upload/...）
+  if (first.startsWith('/profile/')) {
+    return import.meta.env.VITE_APP_BASE_API + first
+  }
+  // 微信小程序临时路径（http://tmp/...）或其他无效路径，标记为不可用
+  if (first.startsWith('http://tmp/') || first.startsWith('wxfile://')) {
+    return '#'
+  }
+  // 其他完整URL直接返回
   if (first.startsWith('http://') || first.startsWith('https://')) {
     return first
   }
