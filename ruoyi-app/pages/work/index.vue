@@ -52,6 +52,7 @@
 
 <script>
 import request from '@/utils/request'
+import { uploadSourceFile } from '@/api/repair/task'
 
 export default {
   data() {
@@ -101,12 +102,14 @@ export default {
         return
       }
       this.isSubmitting = true
-      this.$modal.loading("任务排队中...")
+      this.$modal.loading("上传图片中...")
 
       try {
-        // 演示阶段先使用临时路径，生产环境请改成上传后返回的可访问URL。
-        const imageUrl = this.imageFiles[0]
+        // 先将图片上传到服务器，获取可访问的URL
+        const uploadRes = await uploadSourceFile(this.imageFiles[0])
+        const imageUrl = uploadRes.fileName
 
+        this.$modal.loading("任务排队中...")
         // 提交修复任务
         const res = await request({
           url: '/app/repair/task/submit', 
