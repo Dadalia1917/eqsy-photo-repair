@@ -1,6 +1,6 @@
 // 应用全局配置
 export default {
-  baseUrl: 'http://localhost:8080',
+  baseUrl: 'http://192.168.142.165:8080',
   // 应用信息
   appInfo: {
     // 应用名称
