@@ -19,6 +19,7 @@ COPY ruoyi-quartz/src ruoyi-quartz/src
 RUN mvn -T 1C -DskipTests clean package -pl ruoyi-admin -am
 
 FROM eclipse-temurin:17-jre
+LABEL version="1.0.3" maintainer="eqsy"
 WORKDIR /app
 
 ENV TZ=Asia/Shanghai

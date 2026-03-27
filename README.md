@@ -346,6 +346,14 @@ docker compose up -d --build
 
 ## 更新记录
 
+### 2026-03-27（v1.0.3）
+
+- 修复短信登录/注册接口 `/sendSmsCode`、`/smsLogin` 未加入 Spring Security 白名单导致 401 的问题。
+- 修复 `request.js` 网络请求失败时 `error.message` 为 undefined 引发崩溃的问题。
+- 修复工作台图片显示 500 错误：后端返回的 `resultUrls` 为相对路径，统一拼接 `baseUrl` 处理。
+- 首页副标题文案更新为「让科技有温度 让记忆有归处」。
+- Docker 镜像添加 `version=1.0.3` LABEL。
+
 ### 2026-03-17
 
 - 去除小程序 AI/人工选择，统一为志愿者处理。

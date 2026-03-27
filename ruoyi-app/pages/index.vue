@@ -9,7 +9,7 @@
         欢迎来到 e起守忆
       </view>
       <view class="welcome-sub text-center" style="font-size: 34rpx; color: #5f7d79; margin-top: 20rpx;">
-        帮您把老照片变清晰、让回忆动起来
+        让科技有温度 让记忆有归处
       </view>
     </view>
 

@@ -53,6 +53,7 @@
 <script>
 import request from '@/utils/request'
 import { uploadSourceFile } from '@/api/repair/task'
+import config from '@/config'
 
 export default {
   data() {
@@ -161,7 +162,7 @@ export default {
       this.latestTaskId = latest.taskId
       if (latest.resultUrls) {
         const first = String(latest.resultUrls).split(',')[0]
-        this.resultImageUrl = first
+        this.resultImageUrl = first.startsWith('http') ? first : config.baseUrl + first
         this.resultText = '修复已完成，您可以预览并保存图片。'
         if (showToast) {
           this.$modal.msgSuccess('已刷新，修复结果可查看')

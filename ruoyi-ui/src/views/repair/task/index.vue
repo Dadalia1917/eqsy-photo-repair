@@ -27,8 +27,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="taskList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
+    <el-table v-loading="loading" :data="taskList">
       <el-table-column label="编号" align="center" prop="taskId" width="80" />
       <el-table-column label="任务编号" align="center" prop="taskNo" width="210" />
       <el-table-column label="用户" align="center" prop="userName" width="120" />

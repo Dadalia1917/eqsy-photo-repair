@@ -10,6 +10,7 @@ ENV VITE_APP_BASE_API=${VITE_APP_BASE_API}
 RUN npm run build:prod
 
 FROM nginx:1.27-alpine
+LABEL version="1.0.3" maintainer="eqsy"
 COPY ruoyi-docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
