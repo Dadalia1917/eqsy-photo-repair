@@ -346,6 +346,14 @@ docker compose up -d --build
 
 ## 更新记录
 
+### 2026-03-27（v1.0.4）
+
+- 修复 `upload.js` 网络失败时 `error.errMsg` 未处理导致崩溃的问题（与 `request.js` 同类 bug）。
+- 修复「保存到相册」功能：`uni.saveImageToPhotosAlbum` 需本地临时路径，改为先 `uni.downloadFile` 再保存。
+- 更新生产环境 `config.js` 中 `baseUrl` 为 `https://ruoyi.inmind-lab.com/prod-api`，区分开发/生产环境。
+- Nginx 新增 `/profile/` 反向代理规则，保障生产环境上传图片的正常访问。
+- `application.yml` 文件上传路径由 Windows 路径改为 Linux 路径 `/home/ruoyi/uploadPath`。
+
 ### 2026-03-27（v1.0.3）
 
 - 修复短信登录/注册接口 `/sendSmsCode`、`/smsLogin` 未加入 Spring Security 白名单导致 401 的问题。
