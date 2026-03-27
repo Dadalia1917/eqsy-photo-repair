@@ -60,10 +60,28 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <el-dialog title="上传修复结果" v-model="openUpload" width="680px" append-to-body>
-      <el-form label-width="100px">
+      <el-form label-width="110px">
         <el-form-item label="任务编号">{{ uploadForm.taskNo }}</el-form-item>
         <el-form-item label="修复图片">
           <image-upload v-model="uploadForm.resultUrls" :limit="5" :file-size="20" :drag="true" />
+        </el-form-item>
+        <el-form-item label="动态视频">
+          <el-upload
+            :action="uploadVideoUrl"
+            :headers="uploadHeaders"
+            :before-upload="beforeVideoUpload"
+            :on-success="handleVideoSuccess"
+            :on-error="handleVideoError"
+            accept="video/mp4,video/quicktime"
+            :show-file-list="false"
+          >
+            <el-button type="primary" plain>点击上传视频（≤10MB，mp4/mov）</el-button>
+          </el-upload>
+          <div v-if="uploadForm.resultVideoUrl" class="video-preview">
+            <video :src="buildVideoUrl(uploadForm.resultVideoUrl)" controls style="max-width:100%;max-height:200px;margin-top:8px;"></video>
+            <el-link type="danger" style="margin-left:8px;" @click="uploadForm.resultVideoUrl = ''">移除</el-link>
+          </div>
+          <div class="el-upload__tip" style="color:#909399;">可选，用于生成老照片动起来的短视频效果</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -75,7 +93,7 @@
 </template>
 
 <script setup name="RepairStudent">
-import { listRepairTask, claimRepairTask, uploadManualResult, finishManualTask } from '@/api/repair/task'
+import { listRepairTask, claimRepairTask, uploadManualResult, uploadResultVideo, finishManualTask } from '@/api/repair/task'
 
 const { proxy } = getCurrentInstance()
 const loading = ref(false)
@@ -87,7 +105,8 @@ const openUpload = ref(false)
 const uploadForm = reactive({
   taskId: undefined,
   taskNo: '',
-  resultUrls: ''
+  resultUrls: '',
+  resultVideoUrl: ''
 })
 
 const data = reactive({
@@ -100,6 +119,42 @@ const data = reactive({
   }
 })
 const { queryParams } = toRefs(data)
+
+const uploadVideoUrl = import.meta.env.VITE_APP_BASE_API + '/common/upload'
+const uploadHeaders = { Authorization: 'Bearer ' + localStorage.getItem('Admin-Token') }
+
+function beforeVideoUpload(file) {
+  const isVideo = file.type === 'video/mp4' || file.type === 'video/quicktime'
+  const isLt10M = file.size / 1024 / 1024 < 10
+  if (!isVideo) {
+    proxy.$modal.msgError('只支持 mp4/mov 格式视频')
+    return false
+  }
+  if (!isLt10M) {
+    proxy.$modal.msgError('视频大小不能超过 10MB')
+    return false
+  }
+  return true
+}
+
+function handleVideoSuccess(res) {
+  if (res.code === 200) {
+    uploadForm.resultVideoUrl = res.fileName
+    proxy.$modal.msgSuccess('视频上传成功')
+  } else {
+    proxy.$modal.msgError(res.msg || '视频上传失败')
+  }
+}
+
+function handleVideoError() {
+  proxy.$modal.msgError('视频上传失败，请重试')
+}
+
+function buildVideoUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return import.meta.env.VITE_APP_BASE_API + url
+}
 
 function getList() {
   loading.value = true
@@ -133,22 +188,28 @@ function handleOpenUpload(row) {
   uploadForm.taskId = row.taskId
   uploadForm.taskNo = row.taskNo
   uploadForm.resultUrls = row.resultUrls || ''
+  uploadForm.resultVideoUrl = row.resultVideoUrl || ''
   openUpload.value = true
 }
 
-function submitUpload() {
+async function submitUpload() {
   if (!uploadForm.resultUrls) {
     proxy.$modal.msgError('请先上传修复后的图片')
     return
   }
-  uploadManualResult({
+  await uploadManualResult({
     taskId: uploadForm.taskId,
     resultUrls: uploadForm.resultUrls
-  }).then(() => {
-    proxy.$modal.msgSuccess('上传成功')
-    openUpload.value = false
-    getList()
   })
+  if (uploadForm.resultVideoUrl) {
+    await uploadResultVideo({
+      taskId: uploadForm.taskId,
+      resultVideoUrl: uploadForm.resultVideoUrl
+    })
+  }
+  proxy.$modal.msgSuccess('上传成功')
+  openUpload.value = false
+  getList()
 }
 
 function handleFinish(row) {

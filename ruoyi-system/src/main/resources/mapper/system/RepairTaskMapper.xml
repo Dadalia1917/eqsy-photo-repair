@@ -13,6 +13,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="sourceType" column="source_type"/>
         <result property="sourceUrls" column="source_urls"/>
         <result property="resultUrls" column="result_urls"/>
+        <result property="resultVideoUrl" column="result_video_url"/>
         <result property="status" column="status"/>
         <result property="progress" column="progress"/>
         <result property="studentId" column="student_id"/>
@@ -28,7 +29,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectRepairTaskVo">
         select task_id, task_no, user_id, user_name, repair_mode, source_type, source_urls,
-               result_urls, status, progress, student_id, student_name, error_message,
+               result_urls, result_video_url, status, progress, student_id, student_name, error_message,
                finished_time, remark, create_by, create_time, update_by, update_time
         from repair_task
     </sql>
@@ -91,6 +92,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sourceType != null">source_type = #{sourceType},</if>
             <if test="sourceUrls != null">source_urls = #{sourceUrls},</if>
             <if test="resultUrls != null">result_urls = #{resultUrls},</if>
+            <if test="resultVideoUrl != null">result_video_url = #{resultVideoUrl},</if>
             <if test="status != null">status = #{status},</if>
             <if test="progress != null">progress = #{progress},</if>
             <if test="studentId != null">student_id = #{studentId},</if>
@@ -130,5 +132,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectTotalCompleted" resultType="Long">
         SELECT COUNT(1) FROM repair_task WHERE status = 'COMPLETED'
     </select>
+
+    <update id="updateResultVideoUrl">
+        update repair_task
+        set result_video_url = #{resultVideoUrl},
+            update_time = now()
+        where task_id = #{taskId}
+    </update>
 </mapper>
 

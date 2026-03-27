@@ -6,7 +6,7 @@ import com.ruoyi.system.domain.RepairTask;
 import com.ruoyi.system.domain.vo.RepairTrendVO;
 
 /**
- * ä¿®å¤ä»»åŠ¡Mapper
+ * æ·‡ï¿½ï¿½æµ è¯²å§ŸMapper
  */
 public interface RepairTaskMapper
 {
@@ -18,13 +18,15 @@ public interface RepairTaskMapper
 
     public int updateRepairTask(RepairTask repairTask);
 
+    public int updateResultVideoUrl(@Param("taskId") Long taskId, @Param("resultVideoUrl") String resultVideoUrl);
+
     public List<RepairTrendVO> selectDailyTrend(@Param("days") Integer days);
 
     public int claimTask(@Param("taskId") Long taskId, @Param("studentId") Long studentId,
             @Param("studentName") String studentName, @Param("updateBy") String updateBy);
     /**
-     * Í³¼ÆÒÑÍê³ÉÈÎÎñÊıÁ¿
-     * @return ÊıÁ¿
+     * ç»Ÿè®¡å·²å®Œæˆä»»åŠ¡æ•°é‡
+     * @return æ•°é‡
      */
     public Long selectTotalCompleted();
 }

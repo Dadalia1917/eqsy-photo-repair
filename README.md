@@ -346,6 +346,25 @@ docker compose up -d --build
 
 ## 更新记录
 
+### v1.1.0（多图上传 + 视频结果）
+
+**功能1：小程序多图上传**
+- `work/index.vue` 支持单次最多选择 5 张照片，逐张串行上传，显示 "已选 N/5 张" 及单图移除按钮。
+
+**功能2：视频结果上传与下载**
+- 后台 `student/index.vue` 新增"动态视频"上传入口（≤10 MB，mp4/mov），上传后可预览及移除。
+- 新增 `PUT /repair/task/manual/video` 接口，将视频 URL 单独存储到 `result_video_url` 字段。
+- 小程序工作台收到视频结果后自动播放，并提供"下载视频到手机"按钮。
+- `MimeTypeUtils.java` 允许列表加入 `mov` 格式。
+- `RepairTaskMapper` 新增 `updateResultVideoUrl` 专用方法，绕开 GBK 实体编码限制。
+
+**待手动操作（部署前必须完成）：**
+1. 在 `RepairTask.java` 中添加 `resultVideoUrl` 字段及 getter/setter（见 `sql/v1_1_0_migration.sql`）。
+2. 生产库执行 `sql/v1_1_0_migration.sql`（含列存在检查，可安全重复执行）。
+   ⚠️ 注意：两步必须同时完成，否则 MyBatis 查询时会报 ReflectionException。
+
+---
+
 ### 2026-03-27（v1.0.4）
 
 - 修复 `upload.js` 网络失败时 `error.errMsg` 未处理导致崩溃的问题（与 `request.js` 同类 bug）。

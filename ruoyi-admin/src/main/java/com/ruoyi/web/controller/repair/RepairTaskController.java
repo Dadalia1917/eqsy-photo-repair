@@ -21,6 +21,7 @@ import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.RepairTask;
 import com.ruoyi.system.domain.vo.RepairTrendVO;
 import com.ruoyi.system.service.IRepairTaskService;
+import com.ruoyi.system.service.RepairVideoService;
 
 /**
  * 后台修复任务管理（管理员/学生）
@@ -31,6 +32,9 @@ public class RepairTaskController extends BaseController
 {
     @Autowired
     private IRepairTaskService repairTaskService;
+
+    @Autowired
+    private RepairVideoService repairVideoService;
 
     @PreAuthorize("@ss.hasPermi('repair:task:list')")
     @GetMapping("/list")
@@ -86,6 +90,23 @@ public class RepairTaskController extends BaseController
         }
         LoginUser loginUser = SecurityUtils.getLoginUser();
         int rows = repairTaskService.uploadManualResult(body.getTaskId(), loginUser.getUserId(), body.getResultUrls());
+        return toAjax(rows);
+    }
+
+    @PreAuthorize("@ss.hasPermi('repair:task:edit')")
+    @Log(title = "修复任务", businessType = BusinessType.UPDATE)
+    @PutMapping("/manual/video")
+    public AjaxResult uploadVideo(@RequestBody java.util.Map<String, Object> body)
+    {
+        Object taskIdObj = body.get("taskId");
+        Object videoUrlObj = body.get("resultVideoUrl");
+        if (taskIdObj == null)
+        {
+            return error("taskId 不能为空");
+        }
+        Long taskId = Long.valueOf(taskIdObj.toString());
+        String resultVideoUrl = videoUrlObj != null ? videoUrlObj.toString() : null;
+        int rows = repairVideoService.updateResultVideoUrl(taskId, resultVideoUrl);
         return toAjax(rows);
     }
 

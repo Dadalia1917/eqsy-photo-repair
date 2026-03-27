@@ -11,7 +11,7 @@
  Target Server Version : 80041 (8.0.41)
  File Encoding         : 65001
 
- Date: 27/03/2026 13:43:46
+ Date: 27/03/2026 15:20:43
 */
 
 SET NAMES utf8mb4;
@@ -314,6 +314,7 @@ CREATE TABLE `repair_task`  (
   `source_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '源文件类型 IMAGE/VIDEO',
   `source_urls` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '原文件地址（逗号分隔）',
   `result_urls` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '结果文件地址（逗号分隔）',
+  `result_video_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '结果视频地址（最长5s短视频）',
   `status` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '状态',
   `progress` int NOT NULL DEFAULT 0 COMMENT '进度',
   `student_id` bigint NULL DEFAULT NULL COMMENT '学生ID',
@@ -336,7 +337,7 @@ CREATE TABLE `repair_task`  (
 -- ----------------------------
 -- Records of repair_task
 -- ----------------------------
-INSERT INTO `repair_task` VALUES (1, 'EQSY17745898105985262', 1, 'admin', 'MANUAL', 'IMAGE', '/profile/upload/2026/03/27/7HvSit0sOvI4e9643da1af0f40efc46ed97d06f1640f_20260327133650A001.jpg', '/profile/upload/2026/03/27/65e92fc3dca8ccb5120009a9_20260327133836A002.jpg', 'COMPLETED', 100, 1, 'admin', NULL, '2026-03-27 13:38:40', '123', 'admin', '2026-03-27 13:36:50', 'admin', '2026-03-27 13:38:39');
+INSERT INTO `repair_task` VALUES (1, 'EQSY17745898105985262', 1, 'admin', 'MANUAL', 'IMAGE', '/profile/upload/2026/03/27/7HvSit0sOvI4e9643da1af0f40efc46ed97d06f1640f_20260327133650A001.jpg', '/profile/upload/2026/03/27/65e92fc3dca8ccb5120009a9_20260327133836A002.jpg', NULL, 'COMPLETED', 100, 1, 'admin', NULL, '2026-03-27 13:38:40', '123', 'admin', '2026-03-27 13:36:50', 'admin', '2026-03-27 13:38:39');
 
 -- ----------------------------
 -- Table structure for sys_config

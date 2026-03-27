@@ -7,13 +7,18 @@
 
     <!-- 1. 上传照片 -->
     <view class="card">
-      <view class="section-title">1. 请选择要修复的照片</view>
+      <view class="section-title">1. 请选择要修复的照片（最多5张）</view>
       <view class="upload-list" v-if="imageFiles.length > 0">
         <view class="upload-item" v-for="(img, idx) in imageFiles" :key="idx">
           <image :src="img" mode="aspectFill"></image>
+          <view class="remove-btn" @tap="removeImage(idx)">×</view>
+        </view>
+        <view class="upload-item upload-add" v-if="imageFiles.length < 5" @tap="chooseImages">
+          <text class="add-icon">+</text>
         </view>
       </view>
-      <button class="btn btn-upload" @click="chooseImages">点击这里打开相册/相机</button>
+      <button class="btn btn-upload" v-if="imageFiles.length === 0" @click="chooseImages">点击这里打开相册/相机</button>
+      <text class="upload-count" v-if="imageFiles.length > 0">已选 {{ imageFiles.length }}/5 张</text>
     </view>
 
     <!-- 2. 留言框 -->
@@ -39,12 +44,18 @@
       <view class="result-placeholder" v-else>
         <text>{{ resultText }}</text>
       </view>
+      <!-- 视频结果 -->
+      <view v-if="resultVideoUrl" class="video-section">
+        <view class="section-title" style="font-size:30rpx;margin-top:30rpx;">修复动态视频</view>
+        <video :src="resultVideoUrl" class="result-video" controls autoplay loop></video>
+        <view class="btn btn-download action-btn" style="margin-top:16rpx;" @tap="downloadResultVideo">下载视频到手机</view>
+      </view>
       <view class="result-actions">
         <view class="btn btn-refresh action-btn" :class="isRefreshing ? 'is-disabled' : ''" @tap="handleRefreshClick">
           <text v-if="isRefreshing" class="refresh-spin">⟳</text>
           <text>{{ isRefreshing ? '刷新中...' : '刷新处理结果' }}</text>
         </view>
-        <view class="btn btn-save action-btn" :class="!resultImageUrl ? 'is-disabled' : ''" @tap="saveResultImage">保存到相册</view>
+        <view class="btn btn-save action-btn" :class="!resultImageUrl ? 'is-disabled' : ''" @tap="saveResultImage">保存照片</view>
       </view>
     </view>
   </view>
@@ -64,6 +75,7 @@ export default {
       isRefreshing: false,
       latestTaskId: null,
       resultImageUrl: '',
+      resultVideoUrl: '',
       resultText: '提交任务后，点击“刷新处理结果”可查看修复完成的图片。'
     }
   },
@@ -88,14 +100,19 @@ export default {
       }
     },
     chooseImages() {
+      const remaining = 5 - this.imageFiles.length
+      if (remaining <= 0) return
       uni.chooseImage({
-        count: 1, 
+        count: remaining,
         sizeType: ['original', 'compressed'],
         sourceType: ['album', 'camera'],
         success: (res) => {
-          this.imageFiles = res.tempFilePaths
+          this.imageFiles = this.imageFiles.concat(res.tempFilePaths).slice(0, 5)
         }
       })
+    },
+    removeImage(idx) {
+      this.imageFiles.splice(idx, 1)
     },
     async submitTask() {
       if (this.imageFiles.length === 0) {
@@ -106,9 +123,14 @@ export default {
       this.$modal.loading("上传图片中...")
 
       try {
-        // 先将图片上传到服务器，获取可访问的URL
-        const uploadRes = await uploadSourceFile(this.imageFiles[0])
-        const imageUrl = uploadRes.fileName
+        // 串行上传所有图片
+        const fileNames = []
+        for (let i = 0; i < this.imageFiles.length; i++) {
+          this.$modal.loading(`上传图片 ${i + 1}/${this.imageFiles.length}...`)
+          const uploadRes = await uploadSourceFile(this.imageFiles[i])
+          fileNames.push(uploadRes.fileName)
+        }
+        const sourceUrls = fileNames.join(',')
 
         this.$modal.loading("任务排队中...")
         // 提交修复任务
@@ -119,7 +141,7 @@ export default {
             repairMode: 'MANUAL',
             taskType: 'MANUAL',
             sourceType: 'IMAGE',
-            sourceUrls: imageUrl,
+            sourceUrls: sourceUrls,
             remark: this.aiPrompt
           }
         })
@@ -151,6 +173,7 @@ export default {
 
       if (!res || !res.rows || res.rows.length === 0) {
         this.resultImageUrl = ''
+        this.resultVideoUrl = ''
         this.resultText = '暂无历史任务，先提交一张照片开始修复。'
         if (showToast) {
           this.$modal.msgError('暂无历史任务，先提交照片')
@@ -160,6 +183,12 @@ export default {
 
       const latest = res.rows[0]
       this.latestTaskId = latest.taskId
+      if (latest.resultVideoUrl) {
+        const v = latest.resultVideoUrl
+        this.resultVideoUrl = v.startsWith('http') ? v : config.baseUrl + v
+      } else {
+        this.resultVideoUrl = ''
+      }
       if (latest.resultUrls) {
         const first = String(latest.resultUrls).split(',')[0]
         this.resultImageUrl = first.startsWith('http') ? first : config.baseUrl + first
@@ -175,6 +204,35 @@ export default {
           this.$modal.msgSuccess(`已刷新，当前进度 ${progress}%`)
         }
       }
+    },
+    downloadResultVideo() {
+      if (!this.resultVideoUrl) return
+      this.$modal.loading('正在下载视频...')
+      uni.downloadFile({
+        url: this.resultVideoUrl,
+        success: (res) => {
+          if (res.statusCode === 200) {
+            uni.saveVideoToPhotosAlbum({
+              filePath: res.tempFilePath,
+              success: () => {
+                this.$modal.closeLoading()
+                this.$modal.msgSuccess('视频已保存到相册')
+              },
+              fail: () => {
+                this.$modal.closeLoading()
+                this.$modal.msgError('保存失败，请授权相册权限')
+              }
+            })
+          } else {
+            this.$modal.closeLoading()
+            this.$modal.msgError('视频下载失败')
+          }
+        },
+        fail: () => {
+          this.$modal.closeLoading()
+          this.$modal.msgError('视频下载失败，请检查网络')
+        }
+      })
     },
     saveResultImage() {
       if (!this.resultImageUrl) {
@@ -228,10 +286,27 @@ page { background-color: #f5f6f7; }
 .btn-upload {
   background: #f0f5f4; color: #3eb49f; border: 4rpx dashed #3eb49f; height: 100rpx; line-height: 90rpx; font-size: 36rpx; border-radius: 16rpx;
 }
+.upload-count { font-size: 26rpx; color: #8a9a97; margin-top: 10rpx; display: block; }
 .upload-list {
-  display: flex; flex-wrap: wrap; margin-bottom: 30rpx;
-  .upload-item { width: 180rpx; height: 180rpx; margin-right: 20rpx; margin-bottom: 20rpx; border-radius: 16rpx; overflow: hidden; background: #eee; }
-  image { width: 100%; height: 100%; }
+  display: flex; flex-wrap: wrap; margin-bottom: 20rpx;
+  .upload-item {
+    position: relative; width: 180rpx; height: 180rpx; margin-right: 20rpx; margin-bottom: 20rpx; border-radius: 16rpx; overflow: hidden; background: #eee;
+    image { width: 100%; height: 100%; }
+  }
+  .remove-btn {
+    position: absolute; top: 4rpx; right: 4rpx; width: 44rpx; height: 44rpx; background: rgba(0,0,0,0.5);
+    color: #fff; font-size: 32rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .upload-add {
+    background: #f0f5f4; border: 4rpx dashed #3eb49f; display: flex; align-items: center; justify-content: center;
+    .add-icon { font-size: 64rpx; color: #3eb49f; line-height: 1; }
+  }
+}
+.video-section { margin-top: 10rpx; }
+.result-video { width: 100%; height: 340rpx; border-radius: 16rpx; background: #000; }
+.btn-download {
+  background: #e8f5f2; color: #3eb49f; border: 2rpx solid #bfe6de;
+  height: 84rpx; line-height: 84rpx; border-radius: 14rpx; font-size: 30rpx; text-align: center;
 }
 
 .prompt-header {

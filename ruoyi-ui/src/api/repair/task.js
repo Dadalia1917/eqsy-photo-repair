@@ -30,6 +30,14 @@ export function uploadManualResult(data) {
   })
 }
 
+export function uploadResultVideo(data) {
+  return request({
+    url: '/repair/task/manual/video',
+    method: 'put',
+    data: data
+  })
+}
+
 export function finishManualTask(taskId) {
   return request({
     url: '/repair/task/manual/finish/' + taskId,
