@@ -1,9 +1,8 @@
 // 应用全局配置
-// 本地开发：http://127.0.0.1:8080
-// 生产环境：改为服务器公网 IP 或域名，例如 https://api.eqsy.com
-const isProd = process.env.NODE_ENV === 'production'
+// 本地调试（本机浏览器/模拟器）：http://127.0.0.1:8080
+// 真机预览/生产发行：https://ruoyi.inmind-lab.com/prod-api
 export default {
-  baseUrl: isProd ? 'https://ruoyi.inmind-lab.com/prod-api' : 'http://127.0.0.1:8080',
+  baseUrl: 'https://ruoyi.inmind-lab.com/prod-api',
   // 应用信息
   appInfo: {
     // 应用名称
