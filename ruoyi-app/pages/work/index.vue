@@ -181,10 +181,31 @@ export default {
         this.$modal.msgError('暂无可保存图片')
         return
       }
-      uni.saveImageToPhotosAlbum({
-        filePath: this.resultImageUrl,
-        success: () => this.$modal.msgSuccess('已保存到相册'),
-        fail: () => this.$modal.msgError('保存失败，请检查权限')
+      this.$modal.loading('正在保存图片...')
+      uni.downloadFile({
+        url: this.resultImageUrl,
+        success: (res) => {
+          if (res.statusCode === 200) {
+            uni.saveImageToPhotosAlbum({
+              filePath: res.tempFilePath,
+              success: () => {
+                this.$modal.closeLoading()
+                this.$modal.msgSuccess('已保存到相册')
+              },
+              fail: () => {
+                this.$modal.closeLoading()
+                this.$modal.msgError('保存失败，请授权相册权限')
+              }
+            })
+          } else {
+            this.$modal.closeLoading()
+            this.$modal.msgError('图片下载失败')
+          }
+        },
+        fail: () => {
+          this.$modal.closeLoading()
+          this.$modal.msgError('图片下载失败，请检查网络')
+        }
       })
     }
   }
