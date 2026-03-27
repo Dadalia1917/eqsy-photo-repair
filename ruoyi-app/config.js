@@ -2,7 +2,7 @@
 // 本地调试（本机浏览器/模拟器）：http://127.0.0.1:8080
 // 真机预览/生产发行：https://ruoyi.inmind-lab.com/prod-api
 export default {
-  baseUrl: 'https://ruoyi.inmind-lab.com/prod-api',
+  baseUrl: 'http://ruoyi.inmind-lab.com:33397',
   // 应用信息
   appInfo: {
     // 应用名称
