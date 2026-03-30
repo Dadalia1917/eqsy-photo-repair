@@ -50,12 +50,23 @@
         <text class="text-grey1">还没有账号？</text>
         <text @click="handleUserRegister" class="text-blue">立即注册</text>
       </view>
+
+      <view class="divider-row">
+        <view class="divider-line"></view>
+        <text class="divider-text">或</text>
+        <view class="divider-line"></view>
+      </view>
+
+      <button class="wx-login-btn" @click="handleWxLogin">
+        <uni-icons type="weixin" size="22" color="#fff" style="margin-right:12rpx;"></uni-icons>
+        <text>微信一键登录</text>
+      </button>
     </view>
   </view>
 </template>
 
 <script>
-import { getCodeImg, sendSmsCodeApi, smsLoginApi } from '@/api/login'
+import { getCodeImg, sendSmsCodeApi, smsLoginApi, wxLoginApi } from '@/api/login'
 import { useUserStore } from '@/store/modules/user'
 import { setToken } from '@/utils/auth'
 
@@ -164,6 +175,30 @@ export default {
     },
     handleUserRegister() {
       this.$tab.navigateTo('/pages/register')
+    },
+    async handleWxLogin() {
+      try {
+        const wxRes = await new Promise((resolve, reject) => {
+          uni.login({
+            provider: 'weixin',
+            success: resolve,
+            fail: reject
+          })
+        })
+        if (!wxRes.code) {
+          this.$modal.msgError('获取微信授权失败，请重试')
+          return
+        }
+        const res = await wxLoginApi(wxRes.code)
+        if (!res || res.code !== 200 || !res.token) {
+          this.$modal.msgError((res && res.msg) || '微信登录失败')
+          return
+        }
+        setToken(res.token)
+        this.loginSuccess()
+      } catch (e) {
+        // request.js 已通过 toast 显示网络错误，此处静默处理
+      }
     }
   }
 }
@@ -292,6 +327,47 @@ page {
         margin-left: 10rpx;
         font-weight: bold;
       }
+    }
+
+    .divider-row {
+      display: flex;
+      align-items: center;
+      margin: 40rpx 0 30rpx;
+
+      .divider-line {
+        flex: 1;
+        height: 1rpx;
+        background: #e8e8e8;
+      }
+
+      .divider-text {
+        font-size: 26rpx;
+        color: #bbb;
+        margin: 0 20rpx;
+      }
+    }
+
+    .wx-login-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #07c160;
+      color: #fff;
+      font-size: 32rpx;
+      height: 90rpx;
+      line-height: 90rpx;
+      border-radius: 45rpx;
+      border: none;
+      box-shadow: 0 8rpx 20rpx rgba(7,193,96,0.25);
+
+      &::after {
+        border: none;
+      }
+      &:active {
+        transform: translateY(2rpx);
+        box-shadow: 0 4rpx 10rpx rgba(7,193,96,0.15);
+      }
+
     }
   }
 }

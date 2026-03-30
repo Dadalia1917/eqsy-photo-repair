@@ -304,8 +304,9 @@ npm run dev
 
 ### 3) 小程序调试
 
-- 使用 HBuilderX 或微信开发者工具打开 ruoyi-app。
-- 配置 ruoyi-app/config.js 的后端地址。
+- 使用 HBuilderX 打开 ruoyi-app，点击「运行 → 小程序-微信」。
+- `ruoyi-app/config.js` 已按 `NODE_ENV` 自动切换地址：开发模式用本地 `http://127.0.0.1:8080`，发行模式用云端地址，无需手动修改。
+- **发行正式版前**：微信小程序线上版要求 HTTPS，需在服务器配置 nginx + SSL 证书，并将 `config.js` 生产 `baseUrl` 改为 `https://域名/prod-api`，同时在微信公众平台配置服务器域名白名单。
 
 ---
 
@@ -324,10 +325,14 @@ Docker 目录位于 ruoyi-docker，已包含：
 ```powershell
 cd ruoyi-docker
 Copy-Item .env.example .env
+# 编辑 .env，填入真实 WECHAT_SECRET
 docker compose up -d --build
 ```
 
-说明：`mysql-init/ry_eqsy_repair.sql` 已由人工提前放置，无需再次复制。
+**v1.2.0 新增步骤**：
+- 复制 `.env.example` 为 `.env` 后，将 `WECHAT_SECRET` 替换为真实密钥（已预填 AppID，只需填 Secret）。
+- `mysql-init/ry_eqsy_repair.sql` 中已包含 `wx_openid` 列，全新部署无需额外执行迁移脚本。
+- 已有数据库（非 Docker 初始化）需单独执行 `sql/v1_2_0_migration.sql`（⚠️ 仅执行一次）。
 
 ### 默认访问
 
@@ -345,6 +350,35 @@ docker compose up -d --build
 ---
 
 ## 更新记录
+
+### v1.2.0（微信一键登录 + 双环境配置）
+
+**功能1：微信小程序一键登录 / 自动注册**
+- 登录页新增「微信一键登录」绿色按钮（位于密码/短信登录表单下方，分隔线隔开）。
+- 前端调用 `uni.login()` 获取临时 `code`，发送至后端 `/wxLogin` 接口。
+- 后端通过 `code2session` 接口向微信服务器换取 `openid`；若该 `openid` 首次登录则自动创建用户（无需填写任何信息），返回 JWT Token 直接进入 App。
+- `sys_user` 表新增 `wx_openid VARCHAR(64)` 列，并加唯一索引（已同步至 `ry_eqsy_repair.sql`）。
+- `SysUser.java` 新增 `wxOpenId` 字段及 getter/setter。
+- `SysUserMapper`（接口 + XML）新增 `selectUserByWxOpenId` 查询；`insertUser` SQL 支持 `wx_openid` 写入。
+- `ISysUserService` / `SysUserServiceImpl` 新增对应方法。
+- `SecurityConfig.java` 白名单追加 `/wxLogin`。
+- `application.yml` 已填入真实 `wechat.appid`（`wx1ab607ec500707c0`）与 `wechat.secret`。
+- `api/login.js` 新增 `wxLoginApi`。
+- ✅ **已验证**：微信登录全链路（code2session → 自动注册 → Token → 进入 App）测试通过。
+
+**功能2：前端双环境自动切换**
+- `ruoyi-app/config.js` 改为按 `NODE_ENV` 自动选择后端地址：
+  - HBuilderX **「运行」**（开发）→ `http://127.0.0.1:8080`（本地后端）
+  - HBuilderX **「发行」**（生产）→ `http://ruoyi.inmind-lab.com:33397`（云端）
+- 日常开发无需手动切换 URL。
+
+**部署操作：**
+1. **全新数据库**：直接导入 `sql/ry_eqsy_repair.sql`（已包含 `wx_openid` 列及索引）。
+2. **已有数据库升级**：执行 `sql/v1_2_0_migration.sql`（⚠️ 仅执行一次，不可重复）。
+3. 确保小程序 `manifest.json` 中的 `mp-weixin.appid` 与后端 `wechat.appid` 一致（当前均为 `wx1ab607ec500707c0`）。
+4. 短信登录注意：当前验证码为**模拟发送**（验证码直接回传到接口响应），若需真实发送需购买短信服务（阿里云 SMS / 腾讯云 SMS）并替换 `sendSmsCode` 实现。
+
+---
 
 ### v1.1.0（多图上传 + 视频结果）
 

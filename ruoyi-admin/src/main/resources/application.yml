@@ -128,6 +128,11 @@ springdoc:
       paths-to-match: '/**'
       packages-to-scan: com.ruoyi.web.controller.tool
 
+# 微信小程序配置
+wechat:
+  appid: ${WECHAT_APPID:wx1ab607ec500707c0}
+  secret: ${WECHAT_SECRET:4b39d4134c5742cfc5ec554f2d1ef45b}
+
 # 防盗链配置
 referer:
   # 防盗链开关

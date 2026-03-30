@@ -51,6 +51,8 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       RUOYI_PROFILE: ${RUOYI_PROFILE:-/data/ruoyi/uploadPath}
       SERVER_PORT: 8080
+      WECHAT_APPID: ${WECHAT_APPID:-wx1ab607ec500707c0}
+      WECHAT_SECRET: ${WECHAT_SECRET:-}
     depends_on:
       mysql:
         condition: service_healthy

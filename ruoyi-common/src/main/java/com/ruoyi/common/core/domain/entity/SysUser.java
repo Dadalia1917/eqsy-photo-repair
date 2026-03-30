@@ -93,6 +93,9 @@ public class SysUser extends BaseEntity
     /** 角色ID */
     private Long roleId;
 
+    /** 微信OpenID */
+    private String wxOpenId;
+
     public SysUser()
     {
 
@@ -312,6 +315,16 @@ public class SysUser extends BaseEntity
         this.roleId = roleId;
     }
 
+    public String getWxOpenId()
+    {
+        return wxOpenId;
+    }
+
+    public void setWxOpenId(String wxOpenId)
+    {
+        this.wxOpenId = wxOpenId;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -335,6 +348,7 @@ public class SysUser extends BaseEntity
             .append("updateTime", getUpdateTime())
             .append("remark", getRemark())
             .append("dept", getDept())
+            .append("wxOpenId", getWxOpenId())
             .toString();
     }
 }

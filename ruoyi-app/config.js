@@ -1,8 +1,8 @@
 // 应用全局配置
-// 本地调试（本机浏览器/模拟器）：http://127.0.0.1:8080
-// 真机预览/生产发行：https://ruoyi.inmind-lab.com/prod-api
+// 开发模式（HBuilderX 运行）自动使用本地后端；发行模式自动切换云端
+const isProd = process.env.NODE_ENV === 'production'
 export default {
-  baseUrl: 'http://ruoyi.inmind-lab.com:33397',
+  baseUrl: isProd ? 'http://ruoyi.inmind-lab.com:33397' : 'http://127.0.0.1:8080',
   // 应用信息
   appInfo: {
     // 应用名称

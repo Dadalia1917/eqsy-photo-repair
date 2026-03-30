@@ -42,6 +42,8 @@ public interface SysUserMapper
      * @param userName 用户名
      * @return 用户对象信息
      */
+    public SysUser selectUserByWxOpenId(String wxOpenId);
+
     public SysUser selectUserByUserName(String userName);
 
     /**

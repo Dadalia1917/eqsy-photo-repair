@@ -1,12 +1,20 @@
 package com.ruoyi.web.controller.system;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,6 +47,12 @@ import com.ruoyi.system.service.ISysUserService;
 public class SysLoginController
 {
     private static final String SMS_CODE_KEY = "sms_codes:";
+
+    @Value("${wechat.appid}")
+    private String wxAppId;
+
+    @Value("${wechat.secret}")
+    private String wxSecret;
 
     @Autowired
     private SysLoginService loginService;
@@ -183,6 +197,78 @@ public class SysLoginController
         return AjaxResult.success(menuService.buildMenus(menus));
     }
     
+    /**
+     * 微信小程序一键登录（code2session），未注册用户自动创建账号
+     */
+    @PostMapping("/wxLogin")
+    public AjaxResult wxLogin(@RequestBody Map<String, String> body)
+    {
+        String code = body.get("code");
+        if (StringUtils.isEmpty(code))
+        {
+            return AjaxResult.error("微信登录 code 不能为空");
+        }
+
+        // 1. 调用微信 code2session 接口获取 openid
+        String openId;
+        try
+        {
+            String apiUrl = "https://api.weixin.qq.com/sns/jscode2session?appid=" + wxAppId
+                    + "&secret=" + wxSecret
+                    + "&js_code=" + code
+                    + "&grant_type=authorization_code";
+            URLConnection conn = new URL(apiUrl).openConnection();
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(5000);
+            StringBuilder sb = new StringBuilder();
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8")))
+            {
+                String line;
+                while ((line = br.readLine()) != null) sb.append(line);
+            }
+            JsonNode node = new ObjectMapper().readTree(sb.toString());
+            if (node.has("errcode") && node.get("errcode").asInt() != 0)
+            {
+                return AjaxResult.error("微信授权失败: " + node.path("errmsg").asText());
+            }
+            openId = node.path("openid").asText();
+            if (StringUtils.isEmpty(openId))
+            {
+                return AjaxResult.error("获取微信 openid 失败");
+            }
+        }
+        catch (Exception e)
+        {
+            return AjaxResult.error("请求微信服务失败，请稍后重试");
+        }
+
+        // 2. 查找或自动注册用户
+        SysUser user = userService.selectUserByWxOpenId(openId);
+        if (StringUtils.isNull(user))
+        {
+            user = new SysUser();
+            user.setUserName("wx_" + openId.substring(0, Math.min(openId.length(), 20)));
+            user.setNickName("微信用户");
+            user.setWxOpenId(openId);
+            user.setStatus("0");
+            user.setPassword(SecurityUtils.encryptPassword(UUID.randomUUID().toString()));
+            user.setCreateBy("wxLogin");
+            boolean registered = userService.registerUser(user);
+            if (!registered)
+            {
+                return AjaxResult.error("自动注册失败，请联系管理员");
+            }
+        }
+
+        // 3. 生成 JWT token
+        LoginUser loginUser = new LoginUser(user.getUserId(), user.getDeptId(), user,
+                permissionService.getMenuPermission(user));
+        String token = tokenService.createToken(loginUser);
+        AjaxResult ajax = AjaxResult.success();
+        ajax.put(Constants.TOKEN, token);
+        return ajax;
+    }
+
     // 检查初始密码是否提醒修改
     public boolean initPasswordIsModify(Date pwdUpdateDate)
     {

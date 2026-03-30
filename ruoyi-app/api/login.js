@@ -77,3 +77,13 @@ export function smsLoginApi(phone, smsCode) {
     data: { phone, smsCode }
   })
 }
+
+// 微信一键登录
+export function wxLoginApi(code) {
+  return request({
+    url: '/wxLogin',
+    headers: { isToken: false },
+    method: 'post',
+    data: { code }
+  })
+}
