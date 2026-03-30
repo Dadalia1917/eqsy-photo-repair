@@ -369,7 +369,7 @@ docker compose up -d --build
 **功能2：前端双环境自动切换**
 - `ruoyi-app/config.js` 改为按 `NODE_ENV` 自动选择后端地址：
   - HBuilderX **「运行」**（开发）→ `http://127.0.0.1:8080`（本地后端）
-  - HBuilderX **「发行」**（生产）→ `http://ruoyi.inmind-lab.com:33397`（云端）
+  - HBuilderX **「发行」**（生产）→ `https://ruoyi-backend.inmind-lab.com`（云端）
 - 日常开发无需手动切换 URL。
 
 **部署操作：**
@@ -403,7 +403,7 @@ docker compose up -d --build
 
 - 修复 `upload.js` 网络失败时 `error.errMsg` 未处理导致崩溃的问题（与 `request.js` 同类 bug）。
 - 修复「保存到相册」功能：`uni.saveImageToPhotosAlbum` 需本地临时路径，改为先 `uni.downloadFile` 再保存。
-- 更新生产环境 `config.js` 中 `baseUrl` 为 `https://ruoyi.inmind-lab.com/prod-api`，区分开发/生产环境。
+- 更新生产环境 `config.js` 中 `baseUrl` 为 `https://ruoyi-backend.inmind-lab.com`，区分开发/生产环境。
 - Nginx 新增 `/profile/` 反向代理规则，保障生产环境上传图片的正常访问。
 - `application.yml` 文件上传路径由 Windows 路径改为 Linux 路径 `/home/ruoyi/uploadPath`。
 

@@ -2,7 +2,7 @@
 // 开发模式（HBuilderX 运行）自动使用本地后端；发行模式自动切换云端
 const isProd = process.env.NODE_ENV === 'production'
 export default {
-  baseUrl: isProd ? 'http://ruoyi.inmind-lab.com:33397' : 'http://127.0.0.1:8080',
+  baseUrl: isProd ? 'https://ruoyi-backend.inmind-lab.com' : 'http://127.0.0.1:8080',
   // 应用信息
   appInfo: {
     // 应用名称
