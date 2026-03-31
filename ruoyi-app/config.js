@@ -15,7 +15,7 @@ export default {
     // 应用名称
     name: "e起守忆",
     // 应用版本
-    version: "1.2.0",
+    version: "1.2.2",
     // 应用logo
     logo: "/static/logo.png",
     // 官方网站

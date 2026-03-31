@@ -24,6 +24,10 @@ public class RuoYiConfig
     /** 上传路径 */
     private static String profile;
 
+    private static String windowsProfile;
+
+    private static String linuxProfile;
+
     /** 获取地址开关 */
     private static boolean addressEnabled;
 
@@ -62,12 +66,45 @@ public class RuoYiConfig
 
     public static String getProfile()
     {
+        if (profile != null && !profile.isEmpty())
+        {
+            return profile;
+        }
+        String osName = System.getProperty("os.name", "").toLowerCase();
+        if (osName.contains("win") && windowsProfile != null && !windowsProfile.isEmpty())
+        {
+            return windowsProfile;
+        }
+        if (linuxProfile != null && !linuxProfile.isEmpty())
+        {
+            return linuxProfile;
+        }
         return profile;
     }
 
     public void setProfile(String profile)
     {
         RuoYiConfig.profile = profile;
+    }
+
+    public String getWindowsProfile()
+    {
+        return windowsProfile;
+    }
+
+    public void setWindowsProfile(String windowsProfile)
+    {
+        RuoYiConfig.windowsProfile = windowsProfile;
+    }
+
+    public String getLinuxProfile()
+    {
+        return linuxProfile;
+    }
+
+    public void setLinuxProfile(String linuxProfile)
+    {
+        RuoYiConfig.linuxProfile = linuxProfile;
     }
 
     public static boolean isAddressEnabled()

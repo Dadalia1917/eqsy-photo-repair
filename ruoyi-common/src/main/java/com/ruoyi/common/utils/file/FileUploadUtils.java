@@ -45,7 +45,7 @@ public class FileUploadUtils
 
     public static String getDefaultBaseDir()
     {
-        return defaultBaseDir;
+        return RuoYiConfig.getProfile();
     }
 
     /**

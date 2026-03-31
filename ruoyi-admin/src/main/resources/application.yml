@@ -6,9 +6,12 @@ ruoyi:
   version: 3.9.0
   # 版权年份
   copyrightYear: 2025
-  # 文件路径 示例（ Windows配置D:/ruoyi/uploadPath，Linux配置 /home/ruoyi/uploadPath）
-  # 本地Windows开发可覆盖为 D:/ruoyi/uploadPath，生产Linux服务器使用此默认值
-  profile: /home/ruoyi/uploadPath
+  # 文件上传根目录（按运行系统自动切换）
+  # profile 留空时：Windows 自动使用 windowsProfile，Linux 自动使用 linuxProfile
+  # 如需强制覆盖（例如特殊部署），可单独填写 profile
+  profile:
+  windowsProfile: D:/ruoyi/uploadPath
+  linuxProfile: /home/ruoyi/uploadPath
   # 获取ip地址开关
   addressEnabled: false
   # 验证码类型 math 数字计算 char 字符验证
