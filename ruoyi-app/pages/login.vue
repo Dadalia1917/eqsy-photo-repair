@@ -169,8 +169,13 @@ export default {
       })
     },
     loginSuccess() {
-      useUserStore().getInfo().then(res => {
+      this.$modal.loading("正在加载...")
+      useUserStore().getInfo().then(() => {
+        this.$modal.closeLoading()
         this.$tab.reLaunch('/pages/index')
+      }).catch(() => {
+        this.$modal.closeLoading()
+        this.$modal.msgError("获取用户信息失败，请重新登录")
       })
     },
     handleUserRegister() {

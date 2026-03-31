@@ -2,10 +2,7 @@
   import config from './config'
   import { getToken } from '@/utils/auth'
   import { useConfigStore } from '@/store'
-  import { getCurrentInstance } from "vue"
   import { onLaunch } from '@dcloudio/uni-app'
-
-  const { proxy } = getCurrentInstance()
 
   onLaunch(() => {
     initApp()
@@ -25,11 +22,13 @@
     useConfigStore().setConfig(config)
   }
 
+  //#ifdef H5
   function checkLogin() {
     if (!getToken()) {
-      proxy.$tab.reLaunch('/pages/login') 
+      uni.reLaunch({ url: '/pages/login' })
     }
   }
+  //#endif
 </script>
 
 <style lang="scss">
