@@ -345,6 +345,20 @@ Copy-Item .env.example .env
 docker compose up -d --build
 ```
 
+### Docker 更新后端代码后的重建步骤
+
+- 如果你修改了 `ruoyi-admin` 的 Java 代码（例如登录、权限、接口、数据库兜底逻辑），仅重新打开小程序**不会生效**，因为 Docker 里的后端镜像还是旧版本。
+- 需要在 `ruoyi-docker` 目录重新构建并重启 `ruoyi-admin` 容器：
+
+```powershell
+cd ruoyi-docker
+docker compose build ruoyi-admin
+docker compose up -d ruoyi-admin
+```
+
+- 如果你同时改了前端小程序代码，还需要在 HBuilderX 里重新运行/重新发行 `ruoyi-app`。
+- 如果你使用的是已有 MySQL 数据卷，`mysql-init` 目录下的初始化 SQL **不会自动重跑**；这类场景应依赖业务代码兜底或手动执行升级 SQL。
+
 ### Docker 上传目录说明
 
 - `ruoyi-docker/docker-compose.yml` 中默认通过 `RUOYI_PROFILE` 指定容器内上传根目录，默认值为 `/data/ruoyi/uploadPath`。
@@ -381,6 +395,7 @@ docker compose up -d --build
 - 修复 `font-size: undefinedpx` 控制台警告：`avatar/index.vue` 模块层改用 `uni.getWindowInfo()` 获取屏幕信息，并加兜底默认值。
 - 修复 `wx.getSystemInfoSync is deprecated` 废弃 API 警告：同上，已替换为新 API。
 - 消除 `App.vue` LifeCycle 加载风险：移除顶层 `getCurrentInstance()` 调用，`checkLogin()` 整体收进 `#ifdef H5` 块，改用 `uni.reLaunch()` 原生导航。
+- 补充 Docker 场景下后端代码更新后的重建步骤：修改 `ruoyi-admin` 后需执行 `docker compose build ruoyi-admin` 与 `docker compose up -d ruoyi-admin` 使修复真正生效。
 
 ### 2026-03-31（v1.2.2）
 

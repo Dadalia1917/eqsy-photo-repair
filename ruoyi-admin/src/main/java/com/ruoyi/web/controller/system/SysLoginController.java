@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -74,6 +75,9 @@ public class SysLoginController
 
     @Autowired
     private ISysUserService userService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     /**
      * 登录方法
@@ -203,6 +207,15 @@ public class SysLoginController
     @PostMapping("/wxLogin")
     public AjaxResult wxLogin(@RequestBody Map<String, String> body)
     {
+        try
+        {
+            ensureWxOpenIdColumn();
+        }
+        catch (Exception e)
+        {
+            return AjaxResult.error("数据库缺少微信登录字段，且自动修复失败，请联系管理员");
+        }
+
         String code = body.get("code");
         if (StringUtils.isEmpty(code))
         {
@@ -267,6 +280,25 @@ public class SysLoginController
         AjaxResult ajax = AjaxResult.success();
         ajax.put(Constants.TOKEN, token);
         return ajax;
+    }
+
+    private void ensureWxOpenIdColumn()
+    {
+        Integer columnCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_user' AND COLUMN_NAME = 'wx_openid'",
+                Integer.class);
+        if (columnCount != null && columnCount == 0)
+        {
+            jdbcTemplate.execute("ALTER TABLE sys_user ADD COLUMN wx_openid VARCHAR(64) DEFAULT NULL COMMENT '微信OpenID'");
+        }
+
+        Integer indexCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_user' AND INDEX_NAME = 'idx_sys_user_wx_openid'",
+                Integer.class);
+        if (indexCount != null && indexCount == 0)
+        {
+            jdbcTemplate.execute("ALTER TABLE sys_user ADD UNIQUE INDEX idx_sys_user_wx_openid(wx_openid)");
+        }
     }
 
     // 检查初始密码是否提醒修改
