@@ -1,8 +1,15 @@
 // 应用全局配置
 // 开发模式（HBuilderX 运行）自动使用本地后端；发行模式自动切换云端
 const isProd = process.env.NODE_ENV === 'production'
+const localBaseUrl = 'http://127.0.0.1:8080'
+const cloudBaseUrl = 'https://ruoyi-backend.inmind-lab.com'
+const useCloudInDev = false
+const currentBaseUrl = isProd ? cloudBaseUrl : (useCloudInDev ? cloudBaseUrl : localBaseUrl)
 export default {
-  baseUrl: isProd ? 'https://ruoyi-backend.inmind-lab.com' : 'http://127.0.0.1:8080',
+  localBaseUrl,
+  cloudBaseUrl,
+  baseUrl: currentBaseUrl,
+  staticUrl: currentBaseUrl,
   // 应用信息
   appInfo: {
     // 应用名称

@@ -8,7 +8,7 @@ import { getInfo, login, logout } from '@/api/login'
 import { getToken, removeToken, setToken } from '@/utils/auth'
 import defAva from '@/static/images/profile.jpg'
 
-const baseUrl = config.baseUrl
+const staticUrl = config.staticUrl
 
 export const useUserStore = defineStore('user', () => {
   const token = ref(getToken())
@@ -66,7 +66,7 @@ export const useUserStore = defineStore('user', () => {
         const user = res.user
         let avatar = user.avatar || ""
         if (!isHttp(avatar)) {
-          avatar = (isEmpty(avatar)) ? defAva : baseUrl + avatar
+          avatar = (isEmpty(avatar)) ? defAva : staticUrl + avatar
         }
         const userid = (isEmpty(user) || isEmpty(user.userId)) ? "" : user.userId
         const username = (isEmpty(user) || isEmpty(user.userName)) ? "" : user.userName

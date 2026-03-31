@@ -36,7 +36,7 @@ public class RepairTaskController extends BaseController
     @Autowired
     private RepairVideoService repairVideoService;
 
-    @PreAuthorize("@ss.hasPermi('repair:task:list')")
+    @PreAuthorize("@ss.hasAnyPermi('repair:task:list,repair:task:claim')")
     @GetMapping("/list")
     public TableDataInfo list(RepairTask repairTask)
     {

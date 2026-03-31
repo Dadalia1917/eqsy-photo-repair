@@ -11,7 +11,7 @@
  Target Server Version : 80041 (8.0.41)
  File Encoding         : 65001
 
- Date: 27/03/2026 15:20:43
+ Date: 31/03/2026 08:56:27
 */
 
 SET NAMES utf8mb4;
@@ -826,13 +826,14 @@ CREATE TABLE `sys_role`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`role_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 100 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 101 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role
 -- ----------------------------
 INSERT INTO `sys_role` VALUES (1, '超级管理员', 'admin', 1, '1', 1, 1, '0', '0', 'admin', '2026-03-15 12:49:46', '', NULL, '超级管理员');
 INSERT INTO `sys_role` VALUES (2, '普通角色', 'common', 2, '2', 1, 1, '0', '0', 'admin', '2026-03-15 12:49:46', '', NULL, '普通角色');
+INSERT INTO `sys_role` VALUES (3, '修复学生', 'repair_student', 3, '2', 1, 1, '0', '0', 'admin', '2026-03-31 08:55:00', '', NULL, '学生修复工作台角色');
 
 -- ----------------------------
 -- Table structure for sys_role_dept
@@ -949,6 +950,8 @@ INSERT INTO `sys_role_menu` VALUES (2, 1057);
 INSERT INTO `sys_role_menu` VALUES (2, 1058);
 INSERT INTO `sys_role_menu` VALUES (2, 1059);
 INSERT INTO `sys_role_menu` VALUES (2, 1060);
+INSERT INTO `sys_role_menu` VALUES (3, 2001);
+INSERT INTO `sys_role_menu` VALUES (3, 2003);
 
 -- ----------------------------
 -- Table structure for sys_user
@@ -978,13 +981,14 @@ CREATE TABLE `sys_user`  (
   `wx_openid` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '微信OpenID',
   PRIMARY KEY (`user_id`) USING BTREE,
   UNIQUE INDEX `idx_sys_user_wx_openid`(`wx_openid` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 100 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 101 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
 INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-03-27 13:41:32', '2026-03-15 12:49:46', 'admin', '2026-03-15 12:49:46', '', NULL, '管理员', NULL);
 INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-03-15 12:49:46', '2026-03-15 12:49:46', 'admin', '2026-03-15 12:49:46', '', NULL, '测试员', NULL);
+INSERT INTO `sys_user` VALUES (100, NULL, 'wx_oOaFD3b13JBeJFcZ4Dah', '微信用户', '00', '', '', '0', '', '$2a$10$jIjXI7zPWcRFIK9V1dj4yuSj6mLj8cC0IizxW9qM.fBkw4NxDvKE.', '0', '0', '', NULL, NULL, 'wxLogin', '2026-03-30 10:52:03', '', NULL, NULL, 'oOaFD3b13JBeJFcZ4DahZvlLU834');
 
 -- ----------------------------
 -- Table structure for sys_user_post
@@ -1017,5 +1021,6 @@ CREATE TABLE `sys_user_role`  (
 -- ----------------------------
 INSERT INTO `sys_user_role` VALUES (1, 1);
 INSERT INTO `sys_user_role` VALUES (2, 2);
+INSERT INTO `sys_user_role` VALUES (100, 3);
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -41,7 +41,7 @@
   import { useUserStore } from '@/store'
   import { uploadAvatar } from "@/api/system/user"
   
-  const baseUrl = config.baseUrl
+  const staticUrl = config.staticUrl
 	let sysInfo = uni.getSystemInfoSync()
 	let SCREEN_WIDTH = sysInfo.screenWidth
 	let PAGE_X, // 手按下的x位置
@@ -257,7 +257,7 @@
 							uni.hideLoading()
 							let data = {name: 'avatarfile', filePath: res.tempFilePath}
 							uploadAvatar(data).then(response => {
-								useUserStore().SET_AVATAR(baseUrl + response.imgUrl)
+								useUserStore().SET_AVATAR(staticUrl + response.imgUrl)
 								uni.showToast({ title: "修改成功", icon: 'success' })
 								uni.navigateBack()
 							})

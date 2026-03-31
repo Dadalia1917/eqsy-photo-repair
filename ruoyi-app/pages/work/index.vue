@@ -185,13 +185,13 @@ export default {
       this.latestTaskId = latest.taskId
       if (latest.resultVideoUrl) {
         const v = latest.resultVideoUrl
-        this.resultVideoUrl = v.startsWith('http') ? v : config.baseUrl + v
+        this.resultVideoUrl = v.startsWith('http') ? v : config.staticUrl + v
       } else {
         this.resultVideoUrl = ''
       }
       if (latest.resultUrls) {
         const first = String(latest.resultUrls).split(',')[0]
-        this.resultImageUrl = first.startsWith('http') ? first : config.baseUrl + first
+        this.resultImageUrl = first.startsWith('http') ? first : config.staticUrl + first
         this.resultText = '修复已完成，您可以预览并保存图片。'
         if (showToast) {
           this.$modal.msgSuccess('已刷新，修复结果可查看')
