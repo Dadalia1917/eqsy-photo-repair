@@ -15,20 +15,28 @@ function checkWhite(url) {
 }
 
 // 页面跳转验证拦截器
-let list = ["navigateTo", "redirectTo", "reLaunch", "switchTab"]
+// 不拦截 reLaunch，避免在启动阶段递归调用导致 LifeCycle.load fail
+let isNavigating = false
+let list = ["navigateTo", "redirectTo", "switchTab"]
 list.forEach(item => {
   uni.addInterceptor(item, {
     invoke(to) {
+      if (isNavigating) return true
       if (getToken()) {
         if (to.url === loginPage) {
+          isNavigating = true
           uni.reLaunch({ url: "/" })
+          setTimeout(() => { isNavigating = false }, 500)
+          return false
         }
         return true
       } else {
         if (checkWhite(to.url)) {
           return true
         }
+        isNavigating = true
         uni.reLaunch({ url: loginPage })
+        setTimeout(() => { isNavigating = false }, 500)
         return false
       }
     },

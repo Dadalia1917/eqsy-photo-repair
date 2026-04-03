@@ -40,13 +40,13 @@ const request = config => {
               })
             }
           })
-          reject('无效的会话，或者会话已过期，请重新登录。')
+          return reject('无效的会话，或者会话已过期，请重新登录。')
         } else if (code === 500) {
-          toast(msg)
-          reject('500')
+          toast('服务器繁忙，请稍后再试')
+          return reject('500')
         } else if (code !== 200) {
           toast(msg)
-          reject(code)
+          return reject(code)
         }
         resolve(res.data)
       })

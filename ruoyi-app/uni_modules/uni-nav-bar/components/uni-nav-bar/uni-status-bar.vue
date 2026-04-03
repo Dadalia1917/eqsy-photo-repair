@@ -10,10 +10,10 @@
 		data() {
 			return {
 				// #ifdef MP-WEIXIN
-				statusBarHeight: uni.getWindowInfo().statusBarHeight + 'px',
+				statusBarHeight: (uni.getWindowInfo().statusBarHeight || 20) + 'px',
 				// #endif
 				// #ifndef MP-WEIXIN
-				statusBarHeight: uni.getSystemInfoSync().statusBarHeight + 'px',
+				statusBarHeight: ((uni.getSystemInfoSync().statusBarHeight) || 20) + 'px',
 				// #endif
 
 			}

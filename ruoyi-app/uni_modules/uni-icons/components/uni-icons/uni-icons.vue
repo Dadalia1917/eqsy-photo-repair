@@ -13,6 +13,7 @@
 	import { fontData } from './uniicons_file_vue.js';
 
 	const getVal = (val) => {
+		if (val === undefined || val === null || val === '') return '16px';
 		const reg = /^[0-9]*$/g
 		return (typeof val === 'number' || reg.test(val)) ? val + 'px' : val;
 	}

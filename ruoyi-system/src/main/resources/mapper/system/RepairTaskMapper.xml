@@ -42,6 +42,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectRepairTaskList" parameterType="RepairTask" resultMap="RepairTaskResult">
         <include refid="selectRepairTaskVo"/>
         <where>
+            <if test="userId != null">
+                and user_id = #{userId}
+            </if>
             <if test="taskNo != null and taskNo != ''">
                 and task_no like concat('%', #{taskNo}, '%')
             </if>
