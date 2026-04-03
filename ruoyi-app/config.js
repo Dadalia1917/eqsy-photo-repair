@@ -4,7 +4,7 @@
 const isProd = process.env.NODE_ENV === 'production'
 const localBaseUrl = 'http://127.0.0.1:8080'
 const cloudBaseUrl = 'https://ruoyi-backend.inmind-lab.com'
-const useCloudInDev = true
+const useCloudInDev = false
 const currentBaseUrl = isProd ? cloudBaseUrl : (useCloudInDev ? cloudBaseUrl : localBaseUrl)
 export default {
   localBaseUrl,
