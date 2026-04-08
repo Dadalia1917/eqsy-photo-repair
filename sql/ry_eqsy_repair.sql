@@ -11,7 +11,7 @@
  Target Server Version : 80041 (8.0.41)
  File Encoding         : 65001
 
- Date: 31/03/2026 14:43:47
+ Date: 08/04/2026 10:56:17
 */
 
 SET NAMES utf8mb4;
@@ -332,12 +332,15 @@ CREATE TABLE `repair_task`  (
   INDEX `idx_mode_status`(`repair_mode` ASC, `status` ASC) USING BTREE,
   INDEX `idx_student_status`(`student_id` ASC, `status` ASC) USING BTREE,
   INDEX `idx_create_time`(`create_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '老人影像修复任务表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '老人影像修复任务表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of repair_task
 -- ----------------------------
 INSERT INTO `repair_task` VALUES (1, 'EQSY17745898105985262', 1, 'admin', 'MANUAL', 'IMAGE', '/profile/upload/2026/03/27/7HvSit0sOvI4e9643da1af0f40efc46ed97d06f1640f_20260327133650A001.jpg', '/profile/upload/2026/03/27/65e92fc3dca8ccb5120009a9_20260327133836A002.jpg', NULL, 'COMPLETED', 100, 1, 'admin', NULL, '2026-03-27 13:38:40', '123', 'admin', '2026-03-27 13:36:50', 'admin', '2026-03-27 13:38:39');
+INSERT INTO `repair_task` VALUES (2, 'EQSY17752045597921220', 1, 'admin', 'MANUAL', 'IMAGE', '/profile/upload/2026/04/03/Mr0na5I1BXCm39d99a6f47f96afc2cbc50121125a64e_20260403162239A001.png', NULL, NULL, 'WAIT_STUDENT', 5, NULL, NULL, NULL, NULL, '', 'admin', '2026-04-03 16:22:39', NULL, NULL);
+INSERT INTO `repair_task` VALUES (3, 'EQSY17756123681985250', 100, 'wx_oOaFD3b13JBeJFcZ4Dah', 'MANUAL', 'IMAGE', '/profile/upload/2026/04/08/iggV6uqCQBMy221d3508e2f50650ea24eed7b5f02615_20260408093928A001.jpg', NULL, NULL, 'WAIT_STUDENT', 5, NULL, NULL, NULL, NULL, '', 'wx_oOaFD3b13JBeJFcZ4Dah', '2026-04-08 09:39:28', NULL, NULL);
+INSERT INTO `repair_task` VALUES (4, 'EQSY17756124328416704', 100, 'wx_oOaFD3b13JBeJFcZ4Dah', 'MANUAL', 'IMAGE', '/profile/upload/2026/04/08/DHfiPVTvIxBl39d99a6f47f96afc2cbc50121125a64e_20260408094032A002.png', NULL, NULL, 'WAIT_STUDENT', 5, NULL, NULL, NULL, NULL, '', 'wx_oOaFD3b13JBeJFcZ4Dah', '2026-04-08 09:40:32', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_config
@@ -559,7 +562,7 @@ CREATE TABLE `sys_logininfor`  (
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status` ASC) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 120 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 122 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -584,6 +587,8 @@ INSERT INTO `sys_logininfor` VALUES (116, 'admin', '127.0.0.1', '内网IP', 'Chr
 INSERT INTO `sys_logininfor` VALUES (117, 'admin', '127.0.0.1', '内网IP', 'Chrome 146', 'Windows10', '0', '登录成功', '2026-03-27 13:32:10');
 INSERT INTO `sys_logininfor` VALUES (118, 'admin', '127.0.0.1', '内网IP', 'WeChat 8.0.5', 'iOS 15.0', '0', '登录成功', '2026-03-27 13:35:46');
 INSERT INTO `sys_logininfor` VALUES (119, 'admin', '127.0.0.1', '内网IP', 'WeChat 8.0.5', 'iOS 15.0', '0', '登录成功', '2026-03-27 13:41:32');
+INSERT INTO `sys_logininfor` VALUES (120, 'admin', '127.0.0.1', '内网IP', 'WeChat 8.0.5', 'iOS 15.0', '0', '登录成功', '2026-04-03 16:22:25');
+INSERT INTO `sys_logininfor` VALUES (121, 'admin', '127.0.0.1', '内网IP', 'Chrome 146', 'Windows10', '0', '登录成功', '2026-04-03 16:28:09');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -986,7 +991,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-03-27 13:41:32', '2026-03-15 12:49:46', 'admin', '2026-03-15 12:49:46', '', NULL, '管理员', NULL);
+INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-04-03 16:28:10', '2026-03-15 12:49:46', 'admin', '2026-03-15 12:49:46', '', NULL, '管理员', NULL);
 INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-03-15 12:49:46', '2026-03-15 12:49:46', 'admin', '2026-03-15 12:49:46', '', NULL, '测试员', NULL);
 INSERT INTO `sys_user` VALUES (100, NULL, 'wx_oOaFD3b13JBeJFcZ4Dah', '微信用户', '00', '', '', '0', '', '$2a$10$jIjXI7zPWcRFIK9V1dj4yuSj6mLj8cC0IizxW9qM.fBkw4NxDvKE.', '0', '0', '', NULL, NULL, 'wxLogin', '2026-03-30 10:52:03', '', NULL, NULL, 'oOaFD3b13JBeJFcZ4DahZvlLU834');
 
