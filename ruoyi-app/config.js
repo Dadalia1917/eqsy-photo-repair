@@ -4,7 +4,7 @@
 const isProd = process.env.NODE_ENV === 'production'
 const localBaseUrl = 'http://127.0.0.1:8080'
 const cloudBaseUrl = 'https://ruoyi-backend.inmind-lab.com'
-const useCloudInDev = false
+const useCloudInDev = true
 const currentBaseUrl = isProd ? cloudBaseUrl : (useCloudInDev ? cloudBaseUrl : localBaseUrl)
 export default {
   localBaseUrl,
@@ -16,7 +16,7 @@ export default {
     // 应用名称
     name: "e起守忆",
     // 应用版本
-    version: "1.2.5",
+    version: "1.2.7",
     // 应用logo
     logo: "/static/logo.png",
     // 官方网站

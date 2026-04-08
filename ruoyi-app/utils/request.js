@@ -42,11 +42,12 @@ const request = config => {
           })
           return reject('无效的会话，或者会话已过期，请重新登录。')
         } else if (code === 500) {
-          toast('服务器繁忙，请稍后再试')
-          return reject('500')
+          const serverMsg = res.data.msg || '服务器繁忙，请稍后再试'
+          toast(serverMsg)
+          return reject(serverMsg)
         } else if (code !== 200) {
           toast(msg)
-          return reject(code)
+          return reject(msg)
         }
         resolve(res.data)
       })

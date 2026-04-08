@@ -1,3 +1,5 @@
+let loadingVisible = false
+
 export default {
   // 消息提示
   msg(content) {
@@ -62,17 +64,30 @@ export default {
   },
   // 打开遮罩层
   loading(content) {
+    if (loadingVisible) {
+      try {
+        uni.hideLoading()
+      } catch (e) {
+        console.log(e)
+      }
+    }
     uni.showLoading({
       title: content,
       icon: 'none'
     })
+    loadingVisible = true
   },
   // 关闭遮罩层
   closeLoading() {
+    if (!loadingVisible) {
+      return
+    }
     try {
         uni.hideLoading()
     } catch (e) {
         console.log(e)
+    } finally {
+        loadingVisible = false
     }
   }
 }

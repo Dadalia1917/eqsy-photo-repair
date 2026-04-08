@@ -10,83 +10,63 @@
 
     <view class="login-form-content">
       <view class="login-type-switch" style="display:flex;justify-content:center;margin-bottom:20px;">
-        <text :class="loginType === 'pwd' ? 'active' : ''" @click="loginType = 'pwd'" style="margin-right:10px;font-size:16px;">密码登录</text>
+        <text class="active" style="margin-right:10px;font-size:16px;">账号密码登录</text>
         <text class="divider">|</text>
-        <text :class="loginType === 'sms' ? 'active' : ''" @click="loginType = 'sms'" style="margin-left:10px;font-size:16px;">短信登录</text>
+        <text class="wx-entry" @click="handleWxLogin" style="margin-left:10px;font-size:16px;">微信一键登录</text>
       </view>
 
-      <!-- 密码登录 -->
-      <view class="input-item flex align-center" v-if="loginType === 'pwd'">
+      <view class="input-item flex align-center">
         <uni-icons class="icon" type="person" size="20" color="#5f7d79"></uni-icons>
         <input v-model="loginForm.username" class="input" type="text" placeholder="请输入账号" maxlength="30" />
       </view>
-      <view class="input-item flex align-center" v-if="loginType === 'pwd'">
+      <view class="input-item flex align-center">
         <uni-icons class="icon" type="locked" size="20" color="#5f7d79"></uni-icons>
         <input v-model="loginForm.password" type="password" class="input" placeholder="请输入密码" maxlength="20" />
       </view>
-      <view class="input-item code-item flex align-center" v-if="loginType === 'pwd' && captchaEnabled">
+      <view class="input-item code-item flex align-center" v-if="captchaEnabled">
         <uni-icons class="icon" type="help" size="20" color="#5f7d79"></uni-icons>
         <input v-model="loginForm.code" type="number" class="input" placeholder="请输入验证码" maxlength="4" />
         <image :src="codeUrl" @click="getCode" class="login-code-img"></image>
       </view>
 
-      <!-- 短信登录 -->
-      <view class="input-item flex align-center" v-if="loginType === 'sms'">
-        <uni-icons class="icon" type="phone" size="20" color="#5f7d79"></uni-icons>
-        <input v-model="smsForm.phone" class="input" type="number" placeholder="请输入手机号" maxlength="11" />
-      </view>
-      <view class="input-item code-item flex align-center" v-if="loginType === 'sms'">
-        <uni-icons class="icon" type="chat" size="20" color="#5f7d79"></uni-icons>
-        <input v-model="smsForm.code" type="number" class="input" placeholder="请输入短信验证码" maxlength="6" />
-        <view class="login-code" style="padding-right:0;">
-          <button class="cu-btn sm text-green" style="background:transparent;" @click="sendSmsCode" :disabled="smsTimer > 0">{{ smsTimer > 0 ? smsTimer + "s后获取" : "获取验证码" }}</button>
+      <view class="agreement-row">
+        <view class="agreement-check" @click="agreementChecked = !agreementChecked">
+          <uni-icons :type="agreementChecked ? 'checkbox-filled' : 'circle'" size="18" :color="agreementChecked ? '#3eb49f' : '#b7c3c1'"></uni-icons>
+          <text class="agreement-text">我已阅读并同意</text>
         </view>
+        <text class="agreement-link" @click.stop="openAgreement('privacy')">《隐私政策》</text>
+        <text class="agreement-text">和</text>
+        <text class="agreement-link" @click.stop="openAgreement('service')">《用户服务协议》</text>
       </view>
 
       <view class="action-btn">
-        <button @click="handleLogin" class="login-btn round">登录</button>
+        <button @click="handleLogin" class="login-btn round">账号密码登录</button>
       </view>
       <view class="reg text-center" v-if="register">
         <text class="text-grey1">还没有账号？</text>
         <text @click="handleUserRegister" class="text-blue">立即注册</text>
       </view>
-
-      <view class="divider-row">
-        <view class="divider-line"></view>
-        <text class="divider-text">或</text>
-        <view class="divider-line"></view>
-      </view>
-
-      <button class="wx-login-btn" @click="handleWxLogin">
-        <uni-icons type="weixin" size="22" color="#fff" style="margin-right:12rpx;"></uni-icons>
-        <text>微信一键登录</text>
-      </button>
     </view>
   </view>
 </template>
 
 <script>
-import { getCodeImg, sendSmsCodeApi, smsLoginApi, wxLoginApi } from '@/api/login'
+import { getCodeImg, wxLoginApi } from '@/api/login'
 import { useUserStore } from '@/store/modules/user'
 import { setToken } from '@/utils/auth'
 
 export default {
   data() {
     return {
-      loginType: 'pwd',
       codeUrl: "",
       captchaEnabled: true,
       register: true,
+      agreementChecked: false,
       loginForm: {
         username: "",
         password: "",
         code: "",
         uuid: ""
-      },
-            smsTimer: 0,
-      smsForm: {
-        phone: "",
-        code: ""
       }
     }
   },
@@ -103,58 +83,29 @@ export default {
         }
       })
     },
-        async sendSmsCode() {
-      if (!this.smsForm.phone || this.smsForm.phone.length !== 11) {
-        this.$modal.msgError("请输入有效的11位手机号")
-        return
+    ensureAgreementAccepted() {
+      if (this.agreementChecked) {
+        return true
       }
-      if (this.smsTimer > 0) return
-
-          const res = await sendSmsCodeApi(this.smsForm.phone).catch(() => null)
-          if (!res || res.code !== 200) {
-            this.$modal.msgError((res && res.msg) || "验证码发送失败")
-            return
-          }
-      this.smsTimer = 60
-      let timer = setInterval(() => {
-        this.smsTimer--
-        if (this.smsTimer <= 0) {
-          clearInterval(timer)
-        }
-      }, 1000)
-          this.$modal.msgSuccess("验证码已发送，请注意查收")
-          if (res.smsCode) {
-            this.$modal.msg("开发调试验证码: " + res.smsCode)
-          }
+      this.$modal.msgError("请先阅读并同意《隐私政策》《用户服务协议》")
+      return false
+    },
+    openAgreement(type) {
+      this.$tab.navigateTo(`/pages/common/textview/index?type=${type}`)
     },
     async handleLogin() {
-      if (this.loginType === 'pwd') {
-        if (this.loginForm.username === "") {
-          this.$modal.msgError("请输入您的账号")
-        } else if (this.loginForm.password === "") {
-          this.$modal.msgError("请输入您的密码")
-        } else if (this.loginForm.code === "" && this.captchaEnabled) {
-          this.$modal.msgError("请输入验证码")
-        } else {
-          this.$modal.loading("登录中，请耐心等待...")
-          this.pwdLogin()
-        }
+      if (!this.ensureAgreementAccepted()) {
+        return
+      }
+      if (this.loginForm.username === "") {
+        this.$modal.msgError("请输入您的账号")
+      } else if (this.loginForm.password === "") {
+        this.$modal.msgError("请输入您的密码")
+      } else if (this.loginForm.code === "" && this.captchaEnabled) {
+        this.$modal.msgError("请输入验证码")
       } else {
-        if (this.smsForm.phone === "") {
-          this.$modal.msgError("请输入手机号")
-        } else if (this.smsForm.code === "") {
-          this.$modal.msgError("请输入短信验证码")
-        } else {
-          this.$modal.loading("登录中，请耐心等待...")
-          const res = await smsLoginApi(this.smsForm.phone, this.smsForm.code).catch(() => null)
-          this.$modal.closeLoading()
-          if (!res || res.code !== 200 || !res.token) {
-            this.$modal.msgError((res && res.msg) || "短信登录失败")
-            return
-          }
-          setToken(res.token)
-          this.loginSuccess()
-        }
+        this.$modal.loading("登录中，请耐心等待...")
+        this.pwdLogin()
       }
     },
     async pwdLogin() {
@@ -182,6 +133,9 @@ export default {
       this.$tab.navigateTo('/pages/register')
     },
     async handleWxLogin() {
+      if (!this.ensureAgreementAccepted()) {
+        return
+      }
       try {
         const wxRes = await new Promise((resolve, reject) => {
           uni.login({
@@ -258,6 +212,15 @@ page {
     margin: 0 40rpx;
     box-shadow: 0 10rpx 30rpx rgba(43,61,58,0.08);
 
+    .login-type-switch {
+      align-items: center;
+
+      .wx-entry {
+        color: #3eb49f;
+        font-weight: bold;
+      }
+    }
+
     .active {
       font-weight: bold;
       color: #2b3d3a;
@@ -302,6 +265,29 @@ page {
       }
     }
 
+    .agreement-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 6rpx 0 12rpx;
+      font-size: 24rpx;
+      color: #6b7e7b;
+
+      .agreement-check {
+        display: flex;
+        align-items: center;
+        margin-right: 8rpx;
+      }
+
+      .agreement-text {
+        margin: 0 6rpx;
+      }
+
+      .agreement-link {
+        color: #3eb49f;
+      }
+    }
+
     .login-btn {
       background: linear-gradient(90deg, #4dc4b0, #3eb49f);
       color: #fff;
@@ -332,47 +318,6 @@ page {
         margin-left: 10rpx;
         font-weight: bold;
       }
-    }
-
-    .divider-row {
-      display: flex;
-      align-items: center;
-      margin: 40rpx 0 30rpx;
-
-      .divider-line {
-        flex: 1;
-        height: 1rpx;
-        background: #e8e8e8;
-      }
-
-      .divider-text {
-        font-size: 26rpx;
-        color: #bbb;
-        margin: 0 20rpx;
-      }
-    }
-
-    .wx-login-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #07c160;
-      color: #fff;
-      font-size: 32rpx;
-      height: 90rpx;
-      line-height: 90rpx;
-      border-radius: 45rpx;
-      border: none;
-      box-shadow: 0 8rpx 20rpx rgba(7,193,96,0.25);
-
-      &::after {
-        border: none;
-      }
-      &:active {
-        transform: translateY(2rpx);
-        box-shadow: 0 4rpx 10rpx rgba(7,193,96,0.15);
-      }
-
     }
   }
 }

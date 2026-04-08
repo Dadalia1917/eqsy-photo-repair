@@ -15,21 +15,6 @@
         <uni-icons class="icon" type="person" size="20" color="#5f7d79"></uni-icons>
         <input v-model="registerForm.username" class="input" type="text" placeholder="请输入用户名" maxlength="20" />
       </view>
-
-      <!-- 手机号绑定 -->
-      <view class="input-item flex align-center">
-        <uni-icons class="icon" type="phone" size="20" color="#5f7d79"></uni-icons>
-        <input v-model="registerForm.phonenumber" class="input" type="number" placeholder="请输入您的手机号码" maxlength="11" />
-      </view>
-
-      <!-- 手机验证码 -->
-      <view class="input-item code-item flex align-center">
-        <uni-icons class="icon" type="chat" size="20" color="#5f7d79"></uni-icons>
-        <input v-model="registerForm.smsCode" type="number" class="input" placeholder="请输入短信验证码" maxlength="6" />
-        <view class="login-code" style="padding-right:0;">
-          <button class="cu-btn sm text-green" style="background:transparent;" @click="sendSmsCode" :disabled="smsTimer > 0">{{ smsTimer > 0 ? smsTimer + "s后获取" : "获取验证码" }}</button>
-        </view>
-      </view>
       
       <!-- 图形验证码兜底 (若后台开启了普通验证码也会显示) -->
       <view class="input-item code-item flex align-center" v-if="captchaEnabled">
@@ -61,22 +46,19 @@
 </template>
 
 <script>
-import { getCodeImg, register, sendSmsCodeApi } from '@/api/login'
+import { getCodeImg, register } from '@/api/login'
 
 export default {
   data() {
     return {
       codeUrl: "",
       captchaEnabled: true,
-      smsTimer: 0,
       registerForm: {
         username: "",
-        phonenumber: "",
         password: "",
         confirmPassword: "",
         code: "",
-        uuid: "",
-        smsCode: ""
+        uuid: ""
       }
     }
   },
@@ -93,40 +75,9 @@ export default {
         }
       })
     },
-        async sendSmsCode() {
-      if (!this.registerForm.phonenumber || this.registerForm.phonenumber.length !== 11) {
-        this.$modal.msgError("请输入有效的11位手机号")
-        return
-      }
-      if (this.smsTimer > 0) return
-
-          const res = await sendSmsCodeApi(this.registerForm.phonenumber).catch(() => null)
-          if (!res || res.code !== 200) {
-            this.$modal.msgError((res && res.msg) || "短信验证码发送失败")
-            return
-          }
-
-      this.smsTimer = 60
-      let timer = setInterval(() => {
-        this.smsTimer--
-        if (this.smsTimer <= 0) {
-          clearInterval(timer)
-        }
-      }, 1000)
-          this.$modal.msgSuccess("短信验证码已发送至您的手机，请注意查收")
-          if (res.smsCode) {
-            this.$modal.msg("开发调试验证码: " + res.smsCode)
-          }
-    },
     async handleRegister() {
       if (this.registerForm.username === "") {
         this.$modal.msgError("请输入用户名")
-      } else if (this.registerForm.phonenumber === "") {
-        this.$modal.msgError("请输入您的手机号码")
-      } else if (this.registerForm.phonenumber.length !== 11) {
-        this.$modal.msgError("请输入有效的11位手机号")
-      } else if (this.registerForm.smsCode === "") {
-        this.$modal.msgError("请输入短信验证码")
       } else if (this.registerForm.password === "") {
         this.$modal.msgError("请输入您的密码")
       } else if (this.registerForm.confirmPassword === "") {

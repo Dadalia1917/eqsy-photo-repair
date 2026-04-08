@@ -29,7 +29,15 @@ export default function upload(config) {
       header: config.header,
       formData: config.formData,
       success: (res) => {
-        let result = JSON.parse(res.data)
+        let result = {}
+        try {
+          result = JSON.parse(res.data)
+        } catch (e) {
+          const parseMsg = '上传响应解析失败，请稍后重试'
+          toast(parseMsg)
+          reject(parseMsg)
+          return
+        }
         const code = result.code || 200
         const msg = errorCode[code] || result.msg || errorCode['default']
         if (code === 200) {
@@ -45,10 +53,10 @@ export default function upload(config) {
           reject('无效的会话，或者会话已过期，请重新登录。')
         } else if (code === 500) {
           toast(msg)
-          reject('500')
+          reject(msg)
         } else if (code !== 200) {
           toast(msg)
-          reject(code)
+          reject(msg)
         }
       },
       fail: (error) => {

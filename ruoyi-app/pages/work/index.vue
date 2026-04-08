@@ -88,6 +88,25 @@ export default {
     this.refreshLatestResult()
   },
   methods: {
+    resolveRequestError(error, fallback = '网络异常，请稍后重试') {
+      if (typeof error === 'string') {
+        if (error === '500') return '服务器繁忙，请稍后再试'
+        if (error.includes('无效的会话')) return '登录状态已过期，请重新登录'
+        if (error.includes('### Error')) return '后端数据库异常，请联系管理员检查云端数据库表结构'
+        return error
+      }
+      const rawMsg = (error && (error.message || error.errMsg)) || ''
+      if (!rawMsg) {
+        return fallback
+      }
+      if (rawMsg.includes('timeout')) {
+        return '系统接口请求超时，请稍后再试'
+      }
+      if (rawMsg.includes('ECONNREFUSED') || rawMsg.includes('Network Error') || rawMsg.includes('request:fail') || rawMsg.includes('Failed to fetch')) {
+        return '后端接口连接异常，请确认后端服务已启动'
+      }
+      return fallback
+    },
     async handleRefreshClick() {
       if (this.isRefreshing) {
         return
@@ -120,19 +139,17 @@ export default {
         return
       }
       this.isSubmitting = true
-      this.$modal.loading("上传图片中...")
+      this.$modal.loading("正在提交任务...")
 
       try {
         // 串行上传所有图片
         const fileNames = []
         for (let i = 0; i < this.imageFiles.length; i++) {
-          this.$modal.loading(`上传图片 ${i + 1}/${this.imageFiles.length}...`)
           const uploadRes = await uploadSourceFile(this.imageFiles[i])
           fileNames.push(uploadRes.fileName)
         }
         const sourceUrls = fileNames.join(',')
 
-        this.$modal.loading("任务排队中...")
         // 提交修复任务
         const res = await request({
           url: '/app/repair/task/submit', 
@@ -155,21 +172,33 @@ export default {
           this.$modal.msgError(res.msg || "提交失败")
         }
       } catch (e) {
-        this.$modal.msgError("网络拥堵")
+        this.$modal.msgError(this.resolveRequestError(e, '提交失败，请检查后端服务或网络配置'))
       } finally {
         this.isSubmitting = false
         this.$modal.closeLoading()
       }
     },
     async refreshLatestResult(showToast = false) {
-      const res = await request({
-        url: '/app/repair/task/list',
-        method: 'get',
-        params: {
-          pageNum: 1,
-          pageSize: 1
+      let res = null
+      try {
+        res = await request({
+          url: '/app/repair/task/list',
+          method: 'get',
+          params: {
+            pageNum: 1,
+            pageSize: 1
+          }
+        })
+      } catch (e) {
+        const errMsg = this.resolveRequestError(e, '刷新失败，请稍后重试')
+        this.resultImageUrl = ''
+        this.resultVideoUrl = ''
+        this.resultText = errMsg
+        if (showToast) {
+          this.$modal.msgError(errMsg)
         }
-      }).catch(() => null)
+        return
+      }
 
       if (!res || !res.rows || res.rows.length === 0) {
         this.resultImageUrl = ''
