@@ -4,7 +4,7 @@ import errorCode from '@/utils/errorCode'
 import { useUserStore } from '@/store/modules/user'
 import { toast, showConfirm, tansParams } from '@/utils/common'
 
-let timeout = 10000
+let timeout = 30000
 const baseUrl = config.baseUrl
 
 const request = config => {
@@ -56,15 +56,17 @@ const request = config => {
         let message
         if (!rawMsg || rawMsg === 'Network Error') {
           message = '后端接口连接异常'
-        } else if (rawMsg.includes('timeout')) {
+        } else if (rawMsg.includes('timeout') || rawMsg.includes('timed out') || rawMsg.includes('socket')) {
           message = '系统接口请求超时'
+        } else if (rawMsg.includes('request:fail') || rawMsg.includes('interrupted') || rawMsg.includes('abort')) {
+          message = '网络波动，请稍后重试'
         } else if (rawMsg.includes('Request failed with status code')) {
           message = '系统接口' + rawMsg.substr(rawMsg.length - 3) + '异常'
         } else {
           message = '后端接口连接异常'
         }
         toast(message)
-        reject(error)
+        reject(error || message)
       })
   })
 }

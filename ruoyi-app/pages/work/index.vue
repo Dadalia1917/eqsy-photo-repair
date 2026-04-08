@@ -63,8 +63,12 @@
 
 <script>
 import request from '@/utils/request'
-import { uploadSourceFile } from '@/api/repair/task'
+import { uploadSourceFile, submitRepairTask } from '@/api/repair/task'
 import config from '@/config'
+
+const SUBMIT_DELAY_MS = 600
+const UPLOAD_RETRY_DELAY_MS = 1200
+const DOWNLOAD_TIMEOUT_MS = 45000
 
 export default {
   data() {
@@ -99,13 +103,35 @@ export default {
       if (!rawMsg) {
         return fallback
       }
-      if (rawMsg.includes('timeout')) {
+      if (rawMsg.includes('timeout') || rawMsg.includes('timed out') || rawMsg.includes('socket')) {
         return '系统接口请求超时，请稍后再试'
       }
-      if (rawMsg.includes('ECONNREFUSED') || rawMsg.includes('Network Error') || rawMsg.includes('request:fail') || rawMsg.includes('Failed to fetch')) {
+      if (rawMsg.includes('ECONNREFUSED') || rawMsg.includes('Network Error') || rawMsg.includes('request:fail') || rawMsg.includes('Failed to fetch') || rawMsg.includes('interrupted') || rawMsg.includes('abort')) {
         return '后端接口连接异常，请确认后端服务已启动'
       }
       return fallback
+    },
+    isWeakNetworkError(error) {
+      const rawMsg = typeof error === 'string' ? error : (error && (error.message || error.errMsg)) || ''
+      return rawMsg.includes('timeout') || rawMsg.includes('timed out') || rawMsg.includes('socket') || rawMsg.includes('request:fail') || rawMsg.includes('Network Error') || rawMsg.includes('interrupted') || rawMsg.includes('abort')
+    },
+    sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms))
+    },
+    async uploadWithRetry(filePath, maxRetry = 1) {
+      let lastErr = null
+      for (let attempt = 0; attempt <= maxRetry; attempt++) {
+        try {
+          return await uploadSourceFile(filePath)
+        } catch (error) {
+          lastErr = error
+          if (attempt >= maxRetry || !this.isWeakNetworkError(error)) {
+            throw error
+          }
+          await this.sleep(UPLOAD_RETRY_DELAY_MS * (attempt + 1))
+        }
+      }
+      throw lastErr || '上传失败'
     },
     async handleRefreshClick() {
       if (this.isRefreshing) {
@@ -123,7 +149,7 @@ export default {
       if (remaining <= 0) return
       uni.chooseImage({
         count: remaining,
-        sizeType: ['original', 'compressed'],
+        sizeType: ['compressed'],
         sourceType: ['album', 'camera'],
         success: (res) => {
           this.imageFiles = this.imageFiles.concat(res.tempFilePaths).slice(0, 5)
@@ -145,22 +171,19 @@ export default {
         // 串行上传所有图片
         const fileNames = []
         for (let i = 0; i < this.imageFiles.length; i++) {
-          const uploadRes = await uploadSourceFile(this.imageFiles[i])
+          const uploadRes = await this.uploadWithRetry(this.imageFiles[i], 1)
           fileNames.push(uploadRes.fileName)
         }
         const sourceUrls = fileNames.join(',')
+        await this.sleep(SUBMIT_DELAY_MS)
 
         // 提交修复任务
-        const res = await request({
-          url: '/app/repair/task/submit', 
-          method: 'post',
-          data: {
-            repairMode: 'MANUAL',
-            taskType: 'MANUAL',
-            sourceType: 'IMAGE',
-            sourceUrls: sourceUrls,
-            remark: this.aiPrompt
-          }
+        const res = await submitRepairTask({
+          repairMode: 'MANUAL',
+          taskType: 'MANUAL',
+          sourceType: 'IMAGE',
+          sourceUrls: sourceUrls,
+          remark: this.aiPrompt
         })
         if (res.code === 200) {
           this.$modal.msgSuccess("排队成功！可前往您的个人中心查看进度~")
@@ -238,7 +261,8 @@ export default {
       if (!this.resultVideoUrl) return
       this.$modal.loading('正在下载视频...')
       uni.downloadFile({
-        url: this.resultVideoUrl,
+        url: encodeURI(this.resultVideoUrl),
+        timeout: DOWNLOAD_TIMEOUT_MS,
         success: (res) => {
           if (res.statusCode === 200) {
             uni.saveVideoToPhotosAlbum({
@@ -257,9 +281,9 @@ export default {
             this.$modal.msgError('视频下载失败')
           }
         },
-        fail: () => {
+        fail: (error) => {
           this.$modal.closeLoading()
-          this.$modal.msgError('视频下载失败，请检查网络')
+          this.$modal.msgError(this.resolveRequestError(error, '视频下载失败，请检查网络'))
         }
       })
     },
@@ -270,7 +294,8 @@ export default {
       }
       this.$modal.loading('正在保存图片...')
       uni.downloadFile({
-        url: this.resultImageUrl,
+        url: encodeURI(this.resultImageUrl),
+        timeout: DOWNLOAD_TIMEOUT_MS,
         success: (res) => {
           if (res.statusCode === 200) {
             uni.saveImageToPhotosAlbum({
@@ -289,9 +314,9 @@ export default {
             this.$modal.msgError('图片下载失败')
           }
         },
-        fail: () => {
+        fail: (error) => {
           this.$modal.closeLoading()
-          this.$modal.msgError('图片下载失败，请检查网络')
+          this.$modal.msgError(this.resolveRequestError(error, '图片下载失败，请检查网络'))
         }
       })
     }

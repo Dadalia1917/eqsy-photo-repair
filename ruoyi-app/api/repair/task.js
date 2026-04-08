@@ -1,11 +1,15 @@
 import upload from '@/utils/upload'
 import request from '@/utils/request'
 
+const UPLOAD_TIMEOUT = 90000
+const SUBMIT_TIMEOUT = 45000
+
 export function uploadSourceFile(filePath) {
   return upload({
     url: '/common/upload',
     name: 'file',
-    filePath: filePath
+    filePath: filePath,
+    timeout: UPLOAD_TIMEOUT
   })
 }
 
@@ -13,7 +17,8 @@ export function submitRepairTask(data) {
   return request({
     url: '/app/repair/task/submit',
     method: 'post',
-    data: data
+    data: data,
+    timeout: SUBMIT_TIMEOUT
   })
 }
 
