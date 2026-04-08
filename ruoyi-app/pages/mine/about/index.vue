@@ -4,13 +4,13 @@
       <image style="width: 150rpx;height: 150rpx;" src="/static/logo200.png" mode="widthFix">
       </image>
       <uni-title type="h2" title="e起守忆"></uni-title>
-      <view class="slogan">学校与社区联合的老人影像关怀服务</view>
+      <view class="slogan">学校与社区联合的志愿关怀服务</view>
     </view>
 
     <view class="content-section">
       <view class="intro-card">
         <view class="intro-title">平台简介</view>
-        <view class="intro-text">“e起守忆”聚焦老照片修复与记忆传承。社区居民可上传照片，选择 AI 快速修复或学生志愿者人工精修，修复完成后直接回传到小程序。</view>
+        <view class="intro-text">“e起守忆”聚焦老照片修复与记忆传承。社区居民可上传照片，选择 AI 快速修复或志愿者人工精修，修复完成后直接回传到小程序。</view>
       </view>
 
       <view class="menu-list">
@@ -57,19 +57,9 @@
   const url = useConfigStore().config.appInfo.site_url
   const version = useConfigStore().config.appInfo.version
   const elderLargeFont = ref(false)
-  const voiceAssist = ref(false)
 
   onShow(() => {
     elderLargeFont.value = !!uni.getStorageSync('eqsy_elder_large_font')
-    voiceAssist.value = !!uni.getStorageSync('eqsy_voice_assist')
-    // #ifdef H5
-    if (voiceAssist.value && window.speechSynthesis) {
-      const utter = new SpeechSynthesisUtterance('这里是关于我们页面，您可以查看平台介绍和社区联系方式。')
-      utter.lang = 'zh-CN'
-      window.speechSynthesis.cancel()
-      window.speechSynthesis.speak(utter)
-    }
-    // #endif
   })
 </script>
 

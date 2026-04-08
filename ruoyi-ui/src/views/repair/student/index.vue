@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-alert title="学生修复工作台：先认领任务，再上传修复结果，最后完成回传。" type="info" :closable="false" class="mb12" />
+    <el-alert title="志愿服务工作台：先认领任务，再上传服务结果，最后完成回传。" type="info" :closable="false" class="mb12" />
 
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
       <el-form-item label="任务编号" prop="taskNo">
@@ -31,7 +31,7 @@
           <span v-else class="text-grey">文件不可用</span>
         </template>
       </el-table-column>
-      <el-table-column label="老人需求" prop="remark" min-width="260" show-overflow-tooltip>
+      <el-table-column label="用户需求" prop="remark" min-width="260" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ scope.row.remark || '未填写' }}</span>
         </template>
@@ -86,7 +86,7 @@
       </el-form>
       <template #footer>
         <el-button @click="openUpload = false">取消</el-button>
-        <el-button type="primary" @click="submitUpload">提交</el-button>
+        <el-button type="primary" :loading="submitting" :disabled="submitting" @click="submitUpload">提交</el-button>
       </template>
     </el-dialog>
   </div>
@@ -101,6 +101,7 @@ const showSearch = ref(true)
 const total = ref(0)
 const taskList = ref([])
 const openUpload = ref(false)
+const submitting = ref(false)
 
 const uploadForm = reactive({
   taskId: undefined,
@@ -185,6 +186,7 @@ function handleClaim(row) {
 }
 
 function handleOpenUpload(row) {
+  submitting.value = false
   uploadForm.taskId = row.taskId
   uploadForm.taskNo = row.taskNo
   uploadForm.resultUrls = row.resultUrls || ''
@@ -193,23 +195,35 @@ function handleOpenUpload(row) {
 }
 
 async function submitUpload() {
+  if (submitting.value) {
+    return
+  }
   if (!uploadForm.resultUrls) {
     proxy.$modal.msgError('请先上传修复后的图片')
     return
   }
-  await uploadManualResult({
-    taskId: uploadForm.taskId,
-    resultUrls: uploadForm.resultUrls
-  })
-  if (uploadForm.resultVideoUrl) {
-    await uploadResultVideo({
+  submitting.value = true
+  try {
+    await uploadManualResult({
       taskId: uploadForm.taskId,
-      resultVideoUrl: uploadForm.resultVideoUrl
+      resultUrls: uploadForm.resultUrls
     })
+    if (uploadForm.resultVideoUrl) {
+      await uploadResultVideo({
+        taskId: uploadForm.taskId,
+        resultVideoUrl: uploadForm.resultVideoUrl
+      })
+    }
+    proxy.$modal.msgSuccess('上传成功')
+    openUpload.value = false
+    getList()
+  } catch (error) {
+    if (error && error.message === '数据正在处理，请勿重复提交') {
+      proxy.$modal.msgWarning('数据正在处理，请勿重复提交')
+    }
+  } finally {
+    submitting.value = false
   }
-  proxy.$modal.msgSuccess('上传成功')
-  openUpload.value = false
-  getList()
 }
 
 function handleFinish(row) {

@@ -79,11 +79,14 @@ export function smsLoginApi(phone, smsCode) {
 }
 
 // 微信一键登录
-export function wxLoginApi(code) {
+export function wxLoginApi(code, extra = {}) {
   return request({
     url: '/wxLogin',
     headers: { isToken: false },
     method: 'post',
-    data: { code }
+    data: {
+      code,
+      ...extra
+    }
   })
 }

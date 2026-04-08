@@ -1,7 +1,7 @@
 <template>
   <view class="setting-container" :style="{height: `${windowHeight}px`}">
     <view class="banner-card">
-      <view class="banner-title">老人模式设置</view>
+      <view class="banner-title">长辈模式设置</view>
       <view class="banner-sub">只保留常用功能，降低使用难度</view>
     </view>
 
@@ -16,22 +16,7 @@
         </view>
       </view>
 
-      <view class="list-cell">
-        <view class="menu-item-box">
-          <view>
-            <view class="setting-title">语音播报</view>
-            <view class="setting-desc">进入页面时自动语音提示（H5可用）</view>
-          </view>
-          <switch :checked="voiceAssist" color="#1f7f6f" @change="handleVoiceSwitch" />
-        </view>
-      </view>
 
-      <view class="list-cell list-cell-arrow" @click="handleCallCommunity">
-        <view class="menu-item-box">
-          <uni-icons type="phone" size="20" color="#1f7f6f"></uni-icons>
-          <view>一键联系社区</view>
-        </view>
-      </view>
     </view>
 
     <view class="cu-list menu">
@@ -52,11 +37,8 @@
   const windowHeightValue = ref(600)
   const windowHeight = computed(() => windowHeightValue.value)
   const elderLargeFont = ref(false)
-  const voiceAssist = ref(false)
 
   const LARGE_FONT_KEY = 'eqsy_elder_large_font'
-  const VOICE_ASSIST_KEY = 'eqsy_voice_assist'
-  const COMMUNITY_PHONE = '4001234567'
 
   onMounted(() => {
     if (typeof uni.getWindowInfo === 'function') {
@@ -70,30 +52,12 @@
       })
     }
     elderLargeFont.value = !!uni.getStorageSync(LARGE_FONT_KEY)
-    voiceAssist.value = !!uni.getStorageSync(VOICE_ASSIST_KEY)
   })
 
   function handleFontSwitch(e) {
     elderLargeFont.value = e.detail.value
     uni.setStorageSync(LARGE_FONT_KEY, elderLargeFont.value)
     proxy.$modal.showToast(elderLargeFont.value ? '已开启字体放大' : '已关闭字体放大')
-  }
-
-  function handleVoiceSwitch(e) {
-    voiceAssist.value = e.detail.value
-    uni.setStorageSync(VOICE_ASSIST_KEY, voiceAssist.value)
-    proxy.$modal.showToast(voiceAssist.value ? '已开启语音播报' : '已关闭语音播报')
-  }
-
-  function handleCallCommunity() {
-    proxy.$modal.confirm('是否拨打社区服务热线？').then(() => {
-      uni.makePhoneCall({
-        phoneNumber: COMMUNITY_PHONE,
-        fail: () => {
-          proxy.$modal.showToast('当前环境不支持拨号，请联系社区工作人员')
-        }
-      })
-    }).catch(() => {})
   }
 
   function handleLogout() {

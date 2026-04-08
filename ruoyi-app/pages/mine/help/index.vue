@@ -2,7 +2,7 @@
   <view class="help-container" :class="{ 'elder-large': elderLargeFont }">
     <view class="banner">
       <view class="banner-title">常见问题与使用帮助</view>
-      <view class="banner-sub">面向社区老年人，步骤尽量简单清晰</view>
+      <view class="banner-sub">面向社区用户，步骤尽量简单清晰</view>
     </view>
 
     <view v-for="(item, findex) in list" :key="findex" :title="item.title" class="list-title">
@@ -26,7 +26,6 @@
   
   const { proxy } = getCurrentInstance()
   const elderLargeFont = ref(false)
-  const voiceAssist = ref(false)
 
   const list = ref([{
     title: '修复流程问题',
@@ -35,10 +34,10 @@
       content: '每次最多上传5张，建议先选最清晰的照片。'
     }, {
       title: 'AI修复和人工修复有什么区别？',
-      content: 'AI修复速度快，通常几分钟返回。人工修复由学生志愿者处理，质量更精细，耗时会更长。'
+      content: 'AI修复速度快，通常几分钟返回。人工修复由志愿者处理，质量更精细，耗时会更长。'
     }, {
       title: '照片一直在修复中怎么办？',
-      content: '请在工作台点击“刷新进度”。人工修复场景下，学生会在完成后上传结果，请耐心等待。'
+      content: '请在工作台点击“刷新进度”。人工修复场景下，志愿者会在完成后上传结果，请耐心等待。'
     }, {
       title: '上传照片有什么建议？',
       content: '请尽量避免反光、模糊和水印，建议光线均匀、人物主体完整。'
@@ -64,15 +63,6 @@
 
   onShow(() => {
     elderLargeFont.value = !!uni.getStorageSync('eqsy_elder_large_font')
-    voiceAssist.value = !!uni.getStorageSync('eqsy_voice_assist')
-    // #ifdef H5
-    if (voiceAssist.value && window.speechSynthesis) {
-      const utter = new SpeechSynthesisUtterance('这里是常见问题页面，点击问题即可查看答案。')
-      utter.lang = 'zh-CN'
-      window.speechSynthesis.cancel()
-      window.speechSynthesis.speak(utter)
-    }
-    // #endif
   })
 </script>
 

@@ -189,6 +189,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  		update sys_user
  		<set>
  			<if test="deptId != 0">dept_id = #{deptId},</if>
+			<if test="userName != null and userName != ''">user_name = #{userName},</if>
  			<if test="nickName != null and nickName != ''">nick_name = #{nickName},</if>
  			<if test="email != null ">email = #{email},</if>
  			<if test="phonenumber != null ">phonenumber = #{phonenumber},</if>
@@ -204,7 +205,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  		</set>
  		where user_id = #{userId}
 	</update>
-	
+
 	<update id="updateUserStatus" parameterType="SysUser">
  		update sys_user set status = #{status}, update_time = sysdate() where user_id = #{userId}
 	</update>

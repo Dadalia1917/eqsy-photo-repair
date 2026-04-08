@@ -64,10 +64,23 @@ public class SysProfileController extends BaseController
     {
         LoginUser loginUser = getLoginUser();
         SysUser currentUser = loginUser.getUser();
+        currentUser.setUserName(user.getUserName());
         currentUser.setNickName(user.getNickName());
         currentUser.setEmail(user.getEmail());
         currentUser.setPhonenumber(user.getPhonenumber());
         currentUser.setSex(user.getSex());
+        if (StringUtils.isEmpty(user.getUserName()))
+        {
+            return error("修改用户'" + loginUser.getUsername() + "'失败，登录账号不能为空");
+        }
+        if (user.getUserName().length() > 30)
+        {
+            return error("修改用户'" + loginUser.getUsername() + "'失败，登录账号长度不能超过30个字符");
+        }
+        if (!userService.checkUserNameUnique(currentUser))
+        {
+            return error("修改用户'" + loginUser.getUsername() + "'失败，登录账号已存在");
+        }
         if (StringUtils.isNotEmpty(user.getPhonenumber()) && !userService.checkPhoneUnique(currentUser))
         {
             return error("修改用户'" + loginUser.getUsername() + "'失败，手机号码已存在");

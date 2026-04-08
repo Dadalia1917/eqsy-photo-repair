@@ -52,7 +52,7 @@ public class RepairTaskController extends BaseController
         return success(repairTaskService.selectRepairTaskById(taskId));
     }
 
-    @PreAuthorize("@ss.hasPermi('repair:task:list')")
+    @PreAuthorize("@ss.hasAnyPermi('repair:task:list,repair:task:claim')")
     @GetMapping("/trend")
     public AjaxResult trend(Integer days)
     {

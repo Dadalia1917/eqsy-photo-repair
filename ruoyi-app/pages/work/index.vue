@@ -2,7 +2,7 @@
   <view class="work-container elder-large">
     <view class="hero">
       <text class="hero-title">上传老照片</text>
-      <text class="hero-sub">交给社区学生志愿者帮您焕然一新</text>
+      <text class="hero-sub">交给志愿者帮您焕然一新</text>
     </view>
 
     <!-- 1. 上传照片 -->
@@ -85,7 +85,7 @@ export default {
   },
   computed: {
     submitBtnText() {
-      return '提交给大学生志愿者'
+      return '提交给志愿者'
     }
   },
   onShow() {

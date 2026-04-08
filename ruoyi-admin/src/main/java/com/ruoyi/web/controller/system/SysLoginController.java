@@ -2,15 +2,17 @@ package com.ruoyi.web.controller.system;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,6 +50,8 @@ import com.ruoyi.system.service.ISysUserService;
 public class SysLoginController
 {
     private static final String SMS_CODE_KEY = "sms_codes:";
+    private static final String DEFAULT_WX_PASSWORD = "123456";
+    private static final String WX_ACCESS_TOKEN_CACHE_KEY = "wx:access_token";
 
     @Value("${wechat.appid}")
     private String wxAppId;
@@ -217,10 +221,29 @@ public class SysLoginController
         }
 
         String code = body.get("code");
+        String phoneCode = body.get("phoneCode");
+        String nickName = body.get("nickName");
+        String avatar = body.get("avatar");
         if (StringUtils.isEmpty(code))
         {
             return AjaxResult.error("微信登录 code 不能为空");
         }
+        if (StringUtils.isEmpty(phoneCode))
+        {
+            return AjaxResult.error("请先授权手机号");
+        }
+
+        String phoneNumber = resolveWxPhoneNumber(phoneCode);
+        if (StringUtils.isEmpty(phoneNumber))
+        {
+            return AjaxResult.error("获取手机号失败，请重试");
+        }
+        if (StringUtils.isEmpty(nickName))
+        {
+            nickName = "微信用户";
+        }
+        nickName = normalizeNickName(nickName);
+        avatar = normalizeAvatar(avatar);
 
         // 1. 调用微信 code2session 接口获取 openid
         String openId;
@@ -257,20 +280,70 @@ public class SysLoginController
 
         // 2. 查找或自动注册用户
         SysUser user = userService.selectUserByWxOpenId(openId);
+        Long wxDefaultRoleId = getWxDefaultRoleId();
+        boolean created = false;
         if (StringUtils.isNull(user))
         {
             user = new SysUser();
-            user.setUserName("wx_" + openId.substring(0, Math.min(openId.length(), 20)));
-            user.setNickName("微信用户");
+            user.setUserName(generateNextWxUserName());
+            user.setNickName(nickName);
+            user.setAvatar(avatar);
+            if (phoneCanBindToUser(null, phoneNumber))
+            {
+                user.setPhonenumber(phoneNumber);
+            }
             user.setWxOpenId(openId);
             user.setStatus("0");
-            user.setPassword(SecurityUtils.encryptPassword(UUID.randomUUID().toString()));
+            user.setPassword(SecurityUtils.encryptPassword(DEFAULT_WX_PASSWORD));
             user.setCreateBy("wxLogin");
+            if (wxDefaultRoleId != null)
+            {
+                user.setRoleIds(new Long[] { wxDefaultRoleId });
+            }
             boolean registered = userService.registerUser(user);
             if (!registered)
             {
                 return AjaxResult.error("自动注册失败，请联系管理员");
             }
+            created = true;
+        }
+        else
+        {
+            boolean needUpdate = false;
+            // 迁移旧版 wx_ 前缀账号为 yonghuN 格式
+            if (user.getUserName() != null && user.getUserName().startsWith("wx_"))
+            {
+                String newUserName = generateNextWxUserName();
+                jdbcTemplate.update("UPDATE sys_user SET user_name = ? WHERE user_id = ?",
+                        newUserName, user.getUserId());
+                user.setUserName(newUserName);
+            }
+            if (StringUtils.isNotEmpty(nickName) && !nickName.equals(user.getNickName()))
+            {
+                user.setNickName(nickName);
+                needUpdate = true;
+            }
+            String currentAvatar = StringUtils.isEmpty(user.getAvatar()) ? "" : user.getAvatar();
+            if (!avatar.equals(currentAvatar))
+            {
+                user.setAvatar(avatar);
+                needUpdate = true;
+            }
+            if (StringUtils.isNotEmpty(phoneNumber) && phoneCanBindToUser(user.getUserId(), phoneNumber)
+                    && !phoneNumber.equals(user.getPhonenumber()))
+            {
+                user.setPhonenumber(phoneNumber);
+                needUpdate = true;
+            }
+            if (needUpdate)
+            {
+                user.setUpdateBy("wxLogin");
+                userService.updateUserProfile(user);
+            }
+        }
+        if (wxDefaultRoleId != null && "wxLogin".equals(user.getCreateBy()))
+        {
+            ensureWxUserDefaultRole(user.getUserId(), wxDefaultRoleId);
         }
 
         // 3. 生成 JWT token
@@ -279,7 +352,193 @@ public class SysLoginController
         String token = tokenService.createToken(loginUser);
         AjaxResult ajax = AjaxResult.success();
         ajax.put(Constants.TOKEN, token);
+        if (created)
+        {
+            ajax.put("defaultUserName", user.getUserName());
+            ajax.put("defaultPassword", DEFAULT_WX_PASSWORD);
+        }
         return ajax;
+    }
+
+    private String generateNextWxUserName()
+    {
+        Integer maxIndex = jdbcTemplate.queryForObject(
+                "SELECT COALESCE(MAX(CAST(SUBSTRING(user_name, 7) AS UNSIGNED)), 0) FROM sys_user WHERE user_name REGEXP '^yonghu[0-9]+$'",
+                Integer.class);
+        int nextIndex = (maxIndex == null ? 0 : maxIndex) + 1;
+        String userName = "yonghu" + nextIndex;
+        while (StringUtils.isNotNull(userService.selectUserByUserName(userName)))
+        {
+            nextIndex++;
+            userName = "yonghu" + nextIndex;
+        }
+        return userName;
+    }
+
+    private boolean phoneCanBindToUser(Long userId, String phoneNumber)
+    {
+        if (StringUtils.isEmpty(phoneNumber))
+        {
+            return false;
+        }
+        SysUser checkUser = new SysUser();
+        checkUser.setUserId(userId);
+        checkUser.setPhonenumber(phoneNumber);
+        return userService.checkPhoneUnique(checkUser);
+    }
+
+    private String resolveWxPhoneNumber(String phoneCode)
+    {
+        if (StringUtils.isEmpty(phoneCode))
+        {
+            return null;
+        }
+        try
+        {
+            String accessToken = getWxAccessToken();
+            String phoneNumber = requestWxPhoneNumber(accessToken, phoneCode);
+            if (StringUtils.isNotEmpty(phoneNumber))
+            {
+                return phoneNumber;
+            }
+            // access_token 可能失效，清缓存后重试一次
+            redisCache.deleteObject(WX_ACCESS_TOKEN_CACHE_KEY);
+            accessToken = getWxAccessToken();
+            return requestWxPhoneNumber(accessToken, phoneCode);
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    private String getWxAccessToken() throws Exception
+    {
+        String accessToken = redisCache.getCacheObject(WX_ACCESS_TOKEN_CACHE_KEY);
+        if (StringUtils.isNotEmpty(accessToken))
+        {
+            return accessToken;
+        }
+
+        String apiUrl = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid="
+                + wxAppId + "&secret=" + wxSecret;
+        URLConnection conn = new URL(apiUrl).openConnection();
+        conn.setConnectTimeout(5000);
+        conn.setReadTimeout(5000);
+
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8)))
+        {
+            String line;
+            while ((line = br.readLine()) != null)
+            {
+                sb.append(line);
+            }
+        }
+
+        JsonNode node = new ObjectMapper().readTree(sb.toString());
+        if (node.has("errcode") && node.get("errcode").asInt() != 0)
+        {
+            return null;
+        }
+
+        accessToken = node.path("access_token").asText();
+        if (StringUtils.isEmpty(accessToken))
+        {
+            return null;
+        }
+        int expiresIn = node.path("expires_in").asInt(7200);
+        redisCache.setCacheObject(WX_ACCESS_TOKEN_CACHE_KEY, accessToken, Math.max(60, expiresIn - 300), TimeUnit.SECONDS);
+        return accessToken;
+    }
+
+    private String requestWxPhoneNumber(String accessToken, String phoneCode) throws Exception
+    {
+        if (StringUtils.isEmpty(accessToken) || StringUtils.isEmpty(phoneCode))
+        {
+            return null;
+        }
+
+        String apiUrl = "https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=" + accessToken;
+        HttpURLConnection conn = (HttpURLConnection) new URL(apiUrl).openConnection();
+        conn.setRequestMethod("POST");
+        conn.setConnectTimeout(5000);
+        conn.setReadTimeout(5000);
+        conn.setDoOutput(true);
+        conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+
+        String payload = "{\"code\":\"" + phoneCode + "\"}";
+        try (OutputStream os = conn.getOutputStream())
+        {
+            os.write(payload.getBytes(StandardCharsets.UTF_8));
+        }
+
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8)))
+        {
+            String line;
+            while ((line = br.readLine()) != null)
+            {
+                sb.append(line);
+            }
+        }
+
+        JsonNode node = new ObjectMapper().readTree(sb.toString());
+        if (node.has("errcode") && node.get("errcode").asInt() != 0)
+        {
+            return null;
+        }
+        String phoneNumber = node.path("phone_info").path("phoneNumber").asText();
+        return StringUtils.isEmpty(phoneNumber) ? null : phoneNumber;
+    }
+
+    private Long getWxDefaultRoleId()
+    {
+        try
+        {
+            return jdbcTemplate.queryForObject(
+                    "SELECT role_id FROM sys_role WHERE role_key = 'common' AND status = '0' AND del_flag = '0' LIMIT 1",
+                    Long.class);
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    private void ensureWxUserDefaultRole(Long userId, Long roleId)
+    {
+        if (userId == null || roleId == null)
+        {
+            return;
+        }
+        Integer hasRole = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM sys_user_role WHERE user_id = ? AND role_id = ?",
+                Integer.class, userId, roleId);
+        if (hasRole != null && hasRole > 0)
+        {
+            return;
+        }
+        jdbcTemplate.update("DELETE FROM sys_user_role WHERE user_id = ?", userId);
+        jdbcTemplate.update("INSERT INTO sys_user_role(user_id, role_id) VALUES(?, ?)", userId, roleId);
+    }
+
+    private String normalizeNickName(String nickName)
+    {
+        if (StringUtils.isEmpty(nickName))
+        {
+            return nickName;
+        }
+        return nickName.length() > 30 ? nickName.substring(0, 30) : nickName;
+    }
+
+    private String normalizeAvatar(String avatar)
+    {
+        if (StringUtils.isEmpty(avatar))
+        {
+            return "";
+        }
+        return avatar.length() > 255 ? avatar.substring(0, 255) : avatar;
     }
 
     private void ensureWxOpenIdColumn()
@@ -298,6 +557,14 @@ public class SysLoginController
         if (indexCount != null && indexCount == 0)
         {
             jdbcTemplate.execute("ALTER TABLE sys_user ADD UNIQUE INDEX idx_sys_user_wx_openid(wx_openid)");
+        }
+
+        Integer avatarLength = jdbcTemplate.queryForObject(
+                "SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_user' AND COLUMN_NAME = 'avatar'",
+                Integer.class);
+        if (avatarLength != null && avatarLength < 255)
+        {
+            jdbcTemplate.execute("ALTER TABLE sys_user MODIFY COLUMN avatar VARCHAR(255) DEFAULT '' COMMENT '头像地址'");
         }
     }
 

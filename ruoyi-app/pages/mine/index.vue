@@ -14,7 +14,7 @@
           </view>
           <view v-if="name" @click="handleToInfo" class="user-info">
             <view class="u_title">
-              用户名：{{ name }}
+              {{ name }}
             </view>
           </view>
         </view>
@@ -26,11 +26,9 @@
     </view>
 
     <view class="content-section">
-      <view class="voice-tip" v-if="voiceAssist">已开启语音播报模式</view>
-
       <view class="care-card">
-        <view class="care-title">老年关怀服务提醒</view>
-        <view class="care-text">建议家属协助录入清晰照片，并保持联系方式畅通，便于修复完成后及时查看。</view>
+        <view class="care-title">社区志愿服务提醒</view>
+        <view class="care-text">建议家属协助录入清晰照片，并保持联系方式畅通，便于服务完成后及时查看。</view>
       </view>
 
       <view class="menu-list">
@@ -38,6 +36,12 @@
           <view class="menu-item-box">
             <uni-icons type="person" size="20" color="#1f7f6f"></uni-icons>
             <view>编辑资料</view>
+          </view>
+        </view>
+        <view class="list-cell list-cell-arrow" @click="handleToPwd">
+          <view class="menu-item-box">
+            <uni-icons type="locked" size="20" color="#1f7f6f"></uni-icons>
+            <view>修改登录密码</view>
           </view>
         </view>
         <view class="list-cell list-cell-arrow" @click="handleHelp">
@@ -75,7 +79,6 @@
   const windowHeightValue = ref(600)
   const windowHeight = computed(() => windowHeightValue.value)
   const elderLargeFont = ref(false)
-  const voiceAssist = ref(false)
 
   onLoad(() => {
     if (typeof uni.getWindowInfo === 'function') {
@@ -92,7 +95,6 @@
 
   onShow(() => {
     elderLargeFont.value = !!uni.getStorageSync('eqsy_elder_large_font')
-    voiceAssist.value = !!uni.getStorageSync('eqsy_voice_assist')
   })
 
   function handleToInfo() {
@@ -105,6 +107,10 @@
 
   function handleToSetting() {
     proxy.$tab.navigateTo('/pages/mine/setting/index')
+  }
+
+  function handleToPwd() {
+    proxy.$tab.navigateTo('/pages/mine/pwd/index')
   }
 
   function handleToLogin() {

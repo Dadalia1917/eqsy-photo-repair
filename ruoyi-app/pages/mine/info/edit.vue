@@ -2,6 +2,9 @@
   <view class="container">
     <view class="example">
       <uni-forms ref="form" :model="user" labelWidth="80px">
+        <uni-forms-item label="登录账号" name="userName">
+          <uni-easyinput v-model="user.userName" placeholder="请输入登录账号" maxlength="30" />
+        </uni-forms-item>
         <uni-forms-item label="用户昵称" name="nickName">
           <uni-easyinput v-model="user.nickName" placeholder="请输入昵称" />
         </uni-forms-item>
@@ -28,6 +31,7 @@
 
   const { proxy } = getCurrentInstance()
   const user = ref({
+    userName: "",
     nickName: "",
     phonenumber: "",
     email: "",
@@ -41,6 +45,16 @@
     value: "1"
   }]
   const rules = ref({
+    userName: {
+      rules: [{
+        required: true,
+        errorMessage: '登录账号不能为空'
+      }, {
+        minLength: 2,
+        maxLength: 30,
+        errorMessage: '登录账号长度需在2到30个字符之间'
+      }]
+    },
     nickName: {
       rules: [{
         required: true,
@@ -49,19 +63,19 @@
     },
     phonenumber: {
       rules: [{
-        required: true,
-        errorMessage: '手机号码不能为空'
-      }, {
-        pattern: /^1[3|4|5|6|7|8|9][0-9]\d{8}$/,
+        validateFunction: (rule, value) => {
+          if (!value) return true
+          return /^1[3|4|5|6|7|8|9][0-9]\d{8}$/.test(value)
+        },
         errorMessage: '请输入正确的手机号码'
       }]
     },
     email: {
       rules: [{
-        required: true,
-        errorMessage: '邮箱地址不能为空'
-      }, {
-        format: 'email',
+        validateFunction: (rule, value) => {
+          if (!value) return true
+          return /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(value)
+        },
         errorMessage: '请输入正确的邮箱地址'
       }]
     }

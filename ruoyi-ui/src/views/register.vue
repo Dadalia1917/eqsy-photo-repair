@@ -48,26 +48,6 @@
           <template #prefix><svg-icon icon-class="phone" class="el-input__icon input-icon" /></template>
         </el-input>
       </el-form-item>
-      <el-form-item prop="smsCode">
-        <el-input
-          size="large"
-          v-model="registerForm.smsCode"
-          auto-complete="off"
-          placeholder="手机验证码"
-          style="width: 63%"
-        >
-          <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
-        </el-input>
-        <div class="register-code">
-          <el-button
-            style="width: 100%;"
-            :disabled="smsCountdown > 0"
-            @click="handleSendSmsCode"
-          >
-            {{ smsCountdown > 0 ? `${smsCountdown}s后重发` : '获取短信验证码' }}
-          </el-button>
-        </div>
-      </el-form-item>
       <el-form-item prop="code" v-if="captchaEnabled">
         <el-input
           size="large" 
@@ -108,7 +88,7 @@
 
 <script setup>
 import { ElMessageBox } from "element-plus"
-import { getCodeImg, register, sendSmsCode } from "@/api/login"
+import { getCodeImg, register } from "@/api/login"
 import defaultSettings from '@/settings'
 
 const title = import.meta.env.VITE_APP_TITLE
@@ -119,7 +99,6 @@ const { proxy } = getCurrentInstance()
 const registerForm = ref({
   username: "",
   phonenumber: "",
-  smsCode: "",
   password: "",
   confirmPassword: "",
   code: "",
@@ -143,7 +122,6 @@ const registerRules = {
     { required: true, trigger: "blur", message: "请输入手机号" },
     { pattern: /^1\d{10}$/, message: "请输入正确的11位手机号", trigger: "blur" }
   ],
-  smsCode: [{ required: true, trigger: "blur", message: "请输入短信验证码" }],
   password: [
     { required: true, trigger: "blur", message: "请输入您的密码" },
     { min: 5, max: 20, message: "用户密码长度必须介于 5 和 20 之间", trigger: "blur" },
@@ -159,8 +137,6 @@ const registerRules = {
 const codeUrl = ref("")
 const loading = ref(false)
 const captchaEnabled = ref(true)
-const smsCountdown = ref(0)
-let smsTimer = null
 
 function handleRegister() {
   proxy.$refs.registerRef.validate(valid => {
@@ -191,28 +167,6 @@ function getCode() {
       codeUrl.value = "data:image/gif;base64," + res.img
       registerForm.value.uuid = res.uuid
     }
-  })
-}
-
-function handleSendSmsCode() {
-  const phone = registerForm.value.phonenumber
-  if (!/^1\d{10}$/.test(phone)) {
-    proxy.$modal.msgError("请输入正确的11位手机号")
-    return
-  }
-  if (smsCountdown.value > 0) {
-    return
-  }
-  sendSmsCode(phone).then((res) => {
-    proxy.$modal.msgSuccess(res.msg || "验证码发送成功")
-    smsCountdown.value = 60
-    smsTimer = setInterval(() => {
-      smsCountdown.value -= 1
-      if (smsCountdown.value <= 0) {
-        clearInterval(smsTimer)
-        smsTimer = null
-      }
-    }, 1000)
   })
 }
 

@@ -3,7 +3,7 @@
     <div class="hero">
       <div>
         <h2>e起守忆数据看板</h2>
-        <p>面向大型社区的老人影像修复运营总览</p>
+        <p>{{ heroSubtitle }}</p>
       </div>
       <el-button type="primary" @click="refreshData" :loading="loading">刷新数据</el-button>
     </div>
@@ -18,16 +18,16 @@
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
         <div class="kpi-card">
-          <div class="kpi-label">待认领任务</div>
+          <div class="kpi-label">{{ isAdmin ? '待认领任务' : '等待处理' }}</div>
           <div class="kpi-value">{{ stats.waiting }}</div>
-          <div class="kpi-sub">等待学生志愿者认领</div>
+          <div class="kpi-sub">{{ isAdmin ? '等待志愿者认领' : '等待志愿者接单' }}</div>
         </div>
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
         <div class="kpi-card">
           <div class="kpi-label">处理中任务</div>
           <div class="kpi-value">{{ stats.processing }}</div>
-          <div class="kpi-sub">学生志愿者处理中</div>
+          <div class="kpi-sub">{{ isAdmin ? '志愿者处理中' : '正在处理中' }}</div>
         </div>
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
@@ -97,6 +97,17 @@
 <script setup name="Dashboard">
 import { computed, reactive, ref } from 'vue'
 import { listRepairTask, getRepairTrend } from '@/api/repair/task'
+import useUserStore from '@/store/modules/user'
+
+const userStore = useUserStore()
+const isAdmin = computed(() => userStore.roles.includes('admin'))
+const isStudent = computed(() => userStore.roles.includes('repair_student'))
+
+const heroSubtitle = computed(() => {
+  if (isAdmin.value) return '社区志愿服务运营总览（管理员视图）'
+  if (isStudent.value) return '我的志愿服务任务概览'
+  return '我的服务任务概览'
+})
 
 const loading = ref(false)
 const taskRows = ref([])
@@ -172,10 +183,22 @@ function buildPolyline(arr) {
     .join(' ')
 }
 
+function buildQuery() {
+  const q = { pageNum: 1, pageSize: 300 }
+  if (!isAdmin.value) {
+    if (isStudent.value) {
+      q.studentId = userStore.id
+    } else {
+      q.userId = userStore.id
+    }
+  }
+  return q
+}
+
 function refreshData() {
   loading.value = true
   Promise.all([
-    listRepairTask({ pageNum: 1, pageSize: 300 }),
+    listRepairTask(buildQuery()),
     getRepairTrend(7)
   ]).then(([taskRes, trendRes]) => {
     taskRows.value = taskRes.rows || []

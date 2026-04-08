@@ -69,6 +69,7 @@ export const useUserStore = defineStore('user', () => {
           avatar = (isEmpty(avatar)) ? defAva : staticUrl + avatar
         }
         const userid = (isEmpty(user) || isEmpty(user.userId)) ? "" : user.userId
+        const nickname = (isEmpty(user) || isEmpty(user.nickName)) ? "" : user.nickName
         const username = (isEmpty(user) || isEmpty(user.userName)) ? "" : user.userName
         if (res.roles && res.roles.length > 0) {
           SET_ROLES(res.roles)
@@ -77,7 +78,7 @@ export const useUserStore = defineStore('user', () => {
           SET_ROLES(['ROLE_DEFAULT'])
         }
 		SET_ID(userid)
-        SET_NAME(username)
+        SET_NAME(nickname || username)
         SET_AVATAR(avatar)
         resolve(res)
       }).catch(error => {

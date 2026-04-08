@@ -94,8 +94,8 @@ public class SysRegisterService
         }
         else
         {
-            // 统一注册为后台学生志愿者账号（common角色）
-            String roleKey = "common";
+            // 网页端注册默认分配为学生修复工作台账号
+            String roleKey = "repair_student";
             SysRole role = roleMapper.checkRoleKeyUnique(roleKey);
             if (StringUtils.isNull(role))
             {

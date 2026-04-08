@@ -2,6 +2,7 @@ package com.ruoyi.framework.web.service;
 
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 import com.ruoyi.common.constant.CacheConstants;
 import com.ruoyi.common.constant.Constants;
 import com.ruoyi.common.constant.UserConstants;
+import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.exception.ServiceException;
@@ -50,6 +52,8 @@ public class SysLoginService
 
     @Autowired
     private ISysConfigService configService;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     /**
      * 登录验证
@@ -66,6 +70,8 @@ public class SysLoginService
         validateCaptcha(username, code, uuid);
         // 登录前置校验
         loginPreCheck(username, password);
+        // 统一收敛 common 角色菜单范围，避免误开放系统管理相关权限
+        ensureCommonRoleMenuScope();
         // 用户验证
         Authentication authentication = null;
         try
@@ -94,9 +100,83 @@ public class SysLoginService
         }
         AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_SUCCESS, MessageUtils.message("user.login.success")));
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        correctWebRegisterRole(loginUser);
         recordLoginInfo(loginUser.getUserId());
         // 生成token
         return tokenService.createToken(loginUser);
+    }
+
+    private void ensureCommonRoleMenuScope()
+    {
+        try
+        {
+            Long commonRoleId = jdbcTemplate.queryForObject(
+                    "SELECT role_id FROM sys_role WHERE role_key = 'common' AND status = '0' AND del_flag = '0' LIMIT 1",
+                    Long.class);
+            if (commonRoleId == null)
+            {
+                return;
+            }
+
+            Integer totalCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys_role_menu WHERE role_id = ?",
+                    Integer.class, commonRoleId);
+            Integer outOfScopeCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys_role_menu WHERE role_id = ? AND menu_id NOT IN (2000, 2001, 2002, 2003)",
+                    Integer.class, commonRoleId);
+
+            if ((totalCount != null && totalCount == 4) && (outOfScopeCount == null || outOfScopeCount == 0))
+            {
+                return;
+            }
+
+            jdbcTemplate.update("DELETE FROM sys_role_menu WHERE role_id = ?", commonRoleId);
+            jdbcTemplate.update("INSERT INTO sys_role_menu(role_id, menu_id) VALUES(?, 2000)", commonRoleId);
+            jdbcTemplate.update("INSERT INTO sys_role_menu(role_id, menu_id) VALUES(?, 2001)", commonRoleId);
+            jdbcTemplate.update("INSERT INTO sys_role_menu(role_id, menu_id) VALUES(?, 2002)", commonRoleId);
+            jdbcTemplate.update("INSERT INTO sys_role_menu(role_id, menu_id) VALUES(?, 2003)", commonRoleId);
+        }
+        catch (Exception ignored)
+        {
+        }
+    }
+
+    private void correctWebRegisterRole(LoginUser loginUser)
+    {
+        try
+        {
+            SysUser user = loginUser.getUser();
+            if (user == null || user.getUserId() == null)
+            {
+                return;
+            }
+            if ("wxLogin".equals(user.getCreateBy()) || "admin".equals(user.getUserName()))
+            {
+                return;
+            }
+
+            Integer hasCommonRole = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys_user_role ur JOIN sys_role r ON ur.role_id = r.role_id WHERE ur.user_id = ? AND r.role_key = 'common' AND r.del_flag = '0'",
+                    Integer.class, user.getUserId());
+            Integer hasStudentRole = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys_user_role ur JOIN sys_role r ON ur.role_id = r.role_id WHERE ur.user_id = ? AND r.role_key = 'repair_student' AND r.del_flag = '0'",
+                    Integer.class, user.getUserId());
+
+            if (hasCommonRole != null && hasCommonRole > 0 && (hasStudentRole == null || hasStudentRole == 0))
+            {
+                Long studentRoleId = jdbcTemplate.queryForObject(
+                        "SELECT role_id FROM sys_role WHERE role_key = 'repair_student' AND status = '0' AND del_flag = '0' LIMIT 1",
+                        Long.class);
+                if (studentRoleId != null)
+                {
+                    jdbcTemplate.update("DELETE FROM sys_user_role WHERE user_id = ?", user.getUserId());
+                    jdbcTemplate.update("INSERT INTO sys_user_role(user_id, role_id) VALUES(?, ?)", user.getUserId(), studentRoleId);
+                }
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
     }
 
     /**

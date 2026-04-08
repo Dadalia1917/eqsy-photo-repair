@@ -22,6 +22,9 @@ public interface RepairTaskMapper
 
     public List<RepairTrendVO> selectDailyTrend(@Param("days") Integer days);
 
+    public List<RepairTrendVO> selectDailyTrendByUser(@Param("days") Integer days,
+            @Param("userId") Long userId, @Param("studentId") Long studentId);
+
     public int claimTask(@Param("taskId") Long taskId, @Param("studentId") Long studentId,
             @Param("studentName") String studentName, @Param("updateBy") String updateBy);
     /**

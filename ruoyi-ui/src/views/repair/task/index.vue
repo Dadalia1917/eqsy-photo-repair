@@ -53,7 +53,7 @@
           <el-link v-else type="primary" :href="buildDownload(scope.row.resultUrls)" target="_blank">查看结果文件</el-link>
         </template>
       </el-table-column>
-      <el-table-column label="认领学生" align="center" prop="studentName" width="120" />
+      <el-table-column label="认领志愿者" align="center" prop="studentName" width="120" />
       <el-table-column label="创建时间" align="center" prop="createTime" width="170">
         <template #default="scope">{{ parseTime(scope.row.createTime) }}</template>
       </el-table-column>
@@ -73,7 +73,7 @@ const total = ref(0)
 const taskList = ref([])
 
 const statusOptions = [
-  { label: '等待学生认领', value: 'WAIT_STUDENT' },
+  { label: '\u7b49\u5f85\u5fd7\u613f\u8005\u8ba4\u9886', value: 'WAIT_STUDENT' },
   { label: '人工处理中', value: 'MANUAL_PROCESSING' },
   { label: '已完成', value: 'COMPLETED' }
 ]

@@ -45,6 +45,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="userId != null">
                 and user_id = #{userId}
             </if>
+            <if test="studentId != null">
+                and student_id = #{studentId}
+            </if>
             <if test="taskNo != null and taskNo != ''">
                 and task_no like concat('%', #{taskNo}, '%')
             </if>
@@ -115,6 +118,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                sum(case when status = 'COMPLETED' then 1 else 0 end) as completed_count
         from repair_task
         where create_time <![CDATA[ >= ]]> date_sub(curdate(), interval #{days} day)
+        group by date_format(create_time, '%Y-%m-%d')
+        order by day asc
+    </select>
+
+    <select id="selectDailyTrendByUser" resultType="com.ruoyi.system.domain.vo.RepairTrendVO">
+        select date_format(create_time, '%Y-%m-%d') as day,
+               count(1) as total_count,
+               sum(case when status = 'COMPLETED' then 1 else 0 end) as completed_count
+        from repair_task
+        <where>
+            create_time <![CDATA[ >= ]]> date_sub(curdate(), interval #{days} day)
+            <if test="userId != null">
+                and user_id = #{userId}
+            </if>
+            <if test="studentId != null">
+                and student_id = #{studentId}
+            </if>
+        </where>
         group by date_format(create_time, '%Y-%m-%d')
         order by day asc
     </select>
