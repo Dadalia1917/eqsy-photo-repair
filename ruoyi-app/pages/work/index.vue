@@ -147,14 +147,39 @@ export default {
     chooseImages() {
       const remaining = 5 - this.imageFiles.length
       if (remaining <= 0) return
-      uni.chooseImage({
-        count: remaining,
-        sizeType: ['compressed'],
-        sourceType: ['album', 'camera'],
-        success: (res) => {
-          this.imageFiles = this.imageFiles.concat(res.tempFilePaths).slice(0, 5)
-        }
-      })
+      const doChoose = () => {
+        uni.chooseImage({
+          count: remaining,
+          sizeType: ['compressed'],
+          sourceType: ['album', 'camera'],
+          success: (res) => {
+            this.imageFiles = this.imageFiles.concat(res.tempFilePaths).slice(0, 5)
+          },
+          fail: (err) => {
+            console.error('chooseImage fail:', JSON.stringify(err))
+            const msg = (err && err.errMsg) || ''
+            if (msg.indexOf('cancel') === -1) {
+              this.$modal.msgError('选择图片失败，请检查相册权限')
+            }
+          }
+        })
+      }
+      // #ifdef MP-WEIXIN
+      if (wx.requirePrivacyAuthorize) {
+        wx.requirePrivacyAuthorize({
+          success: () => doChoose(),
+          fail: () => {
+            console.error('requirePrivacyAuthorize fail')
+            this.$modal.msgError('请先同意隐私协议后再选择图片')
+          }
+        })
+      } else {
+        doChoose()
+      }
+      // #endif
+      // #ifndef MP-WEIXIN
+      doChoose()
+      // #endif
     },
     removeImage(idx) {
       this.imageFiles.splice(idx, 1)

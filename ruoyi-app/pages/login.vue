@@ -118,7 +118,7 @@ export default {
       }
     }
   },
-  created() {
+  onReady() {
     this.getCode()
   },
   methods: {
