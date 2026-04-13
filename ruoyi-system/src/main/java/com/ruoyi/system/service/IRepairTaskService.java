@@ -18,11 +18,13 @@ public interface IRepairTaskService
 
     public int finishManualTask(Long taskId, Long studentId);
 
+    public int deleteRepairTaskByIds(Long[] taskIds);
+
     public int triggerAiTask(Long taskId);
 
     public List<RepairTrendVO> selectDailyTrend(Integer days);
     /**
-     * Í³¼ÆÒÑÍê³ÉÈÎÎñÊýÁ¿
+     * Í³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
      */
     public Long selectTotalCompleted();
 }

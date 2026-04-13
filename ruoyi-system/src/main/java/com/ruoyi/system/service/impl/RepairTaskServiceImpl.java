@@ -11,10 +11,12 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.system.domain.RepairTask;
 import com.ruoyi.system.domain.vo.RepairTrendVO;
 import com.ruoyi.system.mapper.RepairTaskMapper;
 import com.ruoyi.system.service.IRepairTaskService;
+import com.ruoyi.system.service.RepairFileCleanupService;
 
 @Service
 public class RepairTaskServiceImpl implements IRepairTaskService
@@ -26,6 +28,9 @@ public class RepairTaskServiceImpl implements IRepairTaskService
 
     @Autowired
     private RepairTaskMapper repairTaskMapper;
+
+    @Autowired
+    private RepairFileCleanupService repairFileCleanupService;
 
     @Override
     public RepairTask selectRepairTaskById(Long taskId)
@@ -100,6 +105,44 @@ public class RepairTaskServiceImpl implements IRepairTaskService
     public int triggerAiTask(Long taskId)
     {
         return 0;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteRepairTaskByIds(Long[] taskIds)
+    {
+        if (taskIds == null || taskIds.length == 0)
+        {
+            return 0;
+        }
+
+        List<RepairTask> tasks = new ArrayList<>();
+        for (Long taskId : taskIds)
+        {
+            if (taskId == null)
+            {
+                continue;
+            }
+            RepairTask task = repairTaskMapper.selectRepairTaskById(taskId);
+            if (task != null)
+            {
+                tasks.add(task);
+            }
+        }
+        if (tasks.isEmpty())
+        {
+            return 0;
+        }
+
+        int rows = repairTaskMapper.deleteRepairTaskByIds(taskIds);
+        if (rows > 0)
+        {
+            for (RepairTask task : tasks)
+            {
+                repairFileCleanupService.deleteTaskAttachments(task);
+            }
+        }
+        return rows;
     }
 
     @Override

@@ -52,6 +52,13 @@ export function triggerAiTask(taskId) {
   })
 }
 
+export function delRepairTask(taskIds) {
+  return request({
+    url: '/repair/task/' + taskIds,
+    method: 'delete'
+  })
+}
+
 export function getRepairTrend(days) {
   return request({
     url: '/repair/task/trend',

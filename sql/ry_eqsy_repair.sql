@@ -11,7 +11,7 @@
  Target Server Version : 80041 (8.0.41)
  File Encoding         : 65001
 
- Date: 08/04/2026 15:22:12
+ Date: 13/04/2026 15:20:22
 */
 
 SET NAMES utf8mb4;
@@ -516,7 +516,7 @@ CREATE TABLE `sys_job`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注信息',
   PRIMARY KEY (`job_id`, `job_name`, `job_group`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 100 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 101 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_job
@@ -524,6 +524,7 @@ CREATE TABLE `sys_job`  (
 INSERT INTO `sys_job` VALUES (1, '系统默认（无参）', 'DEFAULT', 'ryTask.ryNoParams', '0/10 * * * * ?', '3', '1', '1', 'admin', '2026-03-15 12:49:47', '', NULL, '');
 INSERT INTO `sys_job` VALUES (2, '系统默认（有参）', 'DEFAULT', 'ryTask.ryParams(\'ry\')', '0/15 * * * * ?', '3', '1', '1', 'admin', '2026-03-15 12:49:47', '', NULL, '');
 INSERT INTO `sys_job` VALUES (3, '系统默认（多参）', 'DEFAULT', 'ryTask.ryMultipleParams(\'ry\', true, 2000L, 316.50D, 100)', '0/20 * * * * ?', '3', '1', '1', 'admin', '2026-03-15 12:49:47', '', NULL, '');
+INSERT INTO `sys_job` VALUES (100, '上传临时文件清理', 'DEFAULT', 'repairFileCleanupTask.cleanUploadTempFiles(\'48\')', '0 0 3 * * ?', '3', '1', '1', 'admin', '2026-04-13 15:20:16', '', NULL, '每天03:00清理upload/temp中过期且未被任务引用的文件（默认暂停）');
 
 -- ----------------------------
 -- Table structure for sys_job_log
@@ -634,7 +635,7 @@ CREATE TABLE `sys_menu`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2005 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2006 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -729,6 +730,7 @@ INSERT INTO `sys_menu` VALUES (2001, '志愿服务工作台', 0, 0, 'studentRepa
 INSERT INTO `sys_menu` VALUES (2002, '任务查询', 2000, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'repair:task:query', '#', 'admin', '2026-03-15 12:49:54', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2003, '服务结果上传', 2001, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'repair:task:edit', '#', 'admin', '2026-03-15 12:49:54', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2004, 'AI任务触发', 2000, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'repair:task:ai', '#', 'admin', '2026-03-15 12:49:54', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2005, '任务删除', 2000, 3, '#', '', '', '', 1, 0, 'F', '0', '0', 'repair:task:remove', '#', 'admin', '2026-04-13 15:20:16', '', NULL, '');
 
 -- ----------------------------
 -- Table structure for sys_notice

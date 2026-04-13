@@ -57,6 +57,11 @@
       <el-table-column label="创建时间" align="center" prop="createTime" width="170">
         <template #default="scope">{{ parseTime(scope.row.createTime) }}</template>
       </el-table-column>
+      <el-table-column label="操作" align="center" width="110">
+        <template #default="scope">
+          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['repair:task:remove', 'repair:task:list']">删除</el-button>
+        </template>
+      </el-table-column>
     </el-table>
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
@@ -64,7 +69,7 @@
 </template>
 
 <script setup name="RepairTask">
-import { listRepairTask } from '@/api/repair/task'
+import { listRepairTask, delRepairTask } from '@/api/repair/task'
 
 const { proxy } = getCurrentInstance()
 const loading = ref(false)
@@ -135,6 +140,16 @@ function buildDownload(urls) {
     return first
   }
   return import.meta.env.VITE_APP_BASE_API + first
+}
+
+function handleDelete(row) {
+  const taskId = row.taskId
+  proxy.$modal.confirm('是否确认删除任务编号为"' + taskId + '"的数据项？').then(function () {
+    return delRepairTask(taskId)
+  }).then(() => {
+    proxy.$modal.msgSuccess('删除成功')
+    getList()
+  }).catch(() => {})
 }
 
 getList()

@@ -112,6 +112,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where task_id = #{taskId}
     </update>
 
+    <delete id="deleteRepairTaskByIds">
+        delete from repair_task where task_id in
+        <foreach collection="taskIds" item="taskId" open="(" separator="," close=")">
+            #{taskId}
+        </foreach>
+    </delete>
+
     <select id="selectDailyTrend" resultType="com.ruoyi.system.domain.vo.RepairTrendVO">
         select date_format(create_time, '%Y-%m-%d') as day,
                count(1) as total_count,
@@ -163,5 +170,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             update_time = now()
         where task_id = #{taskId}
     </update>
+
+    <select id="selectAllResourceUrls" resultType="String">
+        select source_urls from repair_task where source_urls is not null and source_urls != ''
+        union all
+        select result_urls from repair_task where result_urls is not null and result_urls != ''
+        union all
+        select result_video_url from repair_task where result_video_url is not null and result_video_url != ''
+    </select>
 </mapper>
 

@@ -18,7 +18,11 @@ public interface RepairTaskMapper
 
     public int updateRepairTask(RepairTask repairTask);
 
+    public int deleteRepairTaskByIds(@Param("taskIds") Long[] taskIds);
+
     public int updateResultVideoUrl(@Param("taskId") Long taskId, @Param("resultVideoUrl") String resultVideoUrl);
+
+    public List<String> selectAllResourceUrls();
 
     public List<RepairTrendVO> selectDailyTrend(@Param("days") Integer days);
 

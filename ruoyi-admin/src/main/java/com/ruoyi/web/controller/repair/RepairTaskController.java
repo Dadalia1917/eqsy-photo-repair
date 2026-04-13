@@ -4,6 +4,7 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -126,5 +127,13 @@ public class RepairTaskController extends BaseController
     public AjaxResult triggerAi(@PathVariable Long taskId)
     {
         return error("AI通道已下线，请使用志愿者处理流程");
+    }
+
+    @PreAuthorize("@ss.hasAnyPermi('repair:task:remove,repair:task:list')")
+    @Log(title = "修复任务", businessType = BusinessType.DELETE)
+    @DeleteMapping("/{taskIds}")
+    public AjaxResult remove(@PathVariable Long[] taskIds)
+    {
+        return toAjax(repairTaskService.deleteRepairTaskByIds(taskIds));
     }
 }
