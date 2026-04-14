@@ -27,7 +27,15 @@
       <el-table-column label="提交用户" prop="userName" width="120" align="center" />
       <el-table-column label="源文件" min-width="220">
         <template #default="scope">
-          <el-link v-if="buildDownload(scope.row.sourceUrls) !== '#'" :href="buildDownload(scope.row.sourceUrls)" type="primary" target="_blank">查看原文件</el-link>
+          <div v-if="parseDownloadUrls(scope.row.sourceUrls).length > 0" class="file-links">
+            <el-link
+              v-for="(url, idx) in parseDownloadUrls(scope.row.sourceUrls)"
+              :key="`source-${scope.row.taskId}-${idx}`"
+              :href="url"
+              type="primary"
+              target="_blank"
+            >原图{{ idx + 1 }}</el-link>
+          </div>
           <span v-else class="text-grey">文件不可用</span>
         </template>
       </el-table-column>
@@ -44,7 +52,15 @@
       </el-table-column>
       <el-table-column label="结果文件" min-width="220">
         <template #default="scope">
-          <el-link v-if="scope.row.resultUrls" :href="buildDownload(scope.row.resultUrls)" type="success" target="_blank">查看结果</el-link>
+          <div v-if="parseDownloadUrls(scope.row.resultUrls).length > 0" class="file-links">
+            <el-link
+              v-for="(url, idx) in parseDownloadUrls(scope.row.resultUrls)"
+              :key="`result-${scope.row.taskId}-${idx}`"
+              :href="url"
+              type="success"
+              target="_blank"
+            >结果{{ idx + 1 }}</el-link>
+          </div>
           <span v-else class="text-grey">未上传</span>
         </template>
       </el-table-column>
@@ -233,24 +249,28 @@ function handleFinish(row) {
   })
 }
 
-function buildDownload(urls) {
-  const first = (urls || '').split(',')[0]
-  if (!first) {
+function buildDownloadUrl(url) {
+  const value = (url || '').trim()
+  if (!value) {
     return '#'
   }
-  // 有效的服务器相对路径（如 /profile/upload/...）
-  if (first.startsWith('/profile/')) {
-    return import.meta.env.VITE_APP_BASE_API + first
+  if (value.startsWith('/profile/')) {
+    return import.meta.env.VITE_APP_BASE_API + value
   }
-  // 微信小程序临时路径（http://tmp/...）或其他无效路径，标记为不可用
-  if (first.startsWith('http://tmp/') || first.startsWith('wxfile://')) {
+  if (value.startsWith('http://tmp/') || value.startsWith('wxfile://')) {
     return '#'
   }
-  // 其他完整URL直接返回
-  if (first.startsWith('http://') || first.startsWith('https://')) {
-    return first
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return value
   }
-  return import.meta.env.VITE_APP_BASE_API + first
+  return import.meta.env.VITE_APP_BASE_API + value
+}
+
+function parseDownloadUrls(urls) {
+  return (urls || '')
+    .split(',')
+    .map(item => buildDownloadUrl(item))
+    .filter(item => item && item !== '#')
 }
 
 getList()
@@ -262,5 +282,10 @@ getList()
 }
 .text-grey {
   color: #909399;
+}
+.file-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 </style>

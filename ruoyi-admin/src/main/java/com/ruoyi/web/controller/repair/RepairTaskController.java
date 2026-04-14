@@ -31,6 +31,9 @@ import com.ruoyi.system.service.RepairVideoService;
 @RequestMapping("/repair/task")
 public class RepairTaskController extends BaseController
 {
+    private static final int MAX_IMAGE_COUNT = 5;
+    private static final String URL_SEPARATOR = ",";
+
     @Autowired
     private IRepairTaskService repairTaskService;
 
@@ -89,8 +92,20 @@ public class RepairTaskController extends BaseController
         {
             return error("参数不完整");
         }
+
+        String normalizedResultUrls = normalizeUrlList(body.getResultUrls());
+        int resultCount = countUrlItems(normalizedResultUrls);
+        if (resultCount <= 0)
+        {
+            return error("请先上传修复后的图片");
+        }
+        if (resultCount > MAX_IMAGE_COUNT)
+        {
+            return error("一次最多上传5张修复图片");
+        }
+
         LoginUser loginUser = SecurityUtils.getLoginUser();
-        int rows = repairTaskService.uploadManualResult(body.getTaskId(), loginUser.getUserId(), body.getResultUrls());
+        int rows = repairTaskService.uploadManualResult(body.getTaskId(), loginUser.getUserId(), normalizedResultUrls);
         return toAjax(rows);
     }
 
@@ -135,5 +150,35 @@ public class RepairTaskController extends BaseController
     public AjaxResult remove(@PathVariable Long[] taskIds)
     {
         return toAjax(repairTaskService.deleteRepairTaskByIds(taskIds));
+    }
+
+    private int countUrlItems(String urls)
+    {
+        String[] items = StringUtils.split(urls, URL_SEPARATOR);
+        return items == null ? 0 : items.length;
+    }
+
+    private String normalizeUrlList(String urls)
+    {
+        String[] rawItems = StringUtils.split(urls, URL_SEPARATOR);
+        if (rawItems == null || rawItems.length == 0)
+        {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (String item : rawItems)
+        {
+            String value = StringUtils.trimToEmpty(item);
+            if (StringUtils.isBlank(value))
+            {
+                continue;
+            }
+            if (builder.length() > 0)
+            {
+                builder.append(URL_SEPARATOR);
+            }
+            builder.append(value);
+        }
+        return builder.toString();
     }
 }

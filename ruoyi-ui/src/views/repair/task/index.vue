@@ -49,8 +49,16 @@
       </el-table-column>
       <el-table-column label="修复结果" align="center" min-width="220">
         <template #default="scope">
-          <span class="text-grey" v-if="!scope.row.resultUrls">暂无</span>
-          <el-link v-else type="primary" :href="buildDownload(scope.row.resultUrls)" target="_blank">查看结果文件</el-link>
+          <div v-if="parseDownloadUrls(scope.row.resultUrls).length > 0" class="file-links">
+            <el-link
+              v-for="(url, idx) in parseDownloadUrls(scope.row.resultUrls)"
+              :key="`result-${scope.row.taskId}-${idx}`"
+              type="primary"
+              :href="url"
+              target="_blank"
+            >结果{{ idx + 1 }}</el-link>
+          </div>
+          <span class="text-grey" v-else>暂无</span>
         </template>
       </el-table-column>
       <el-table-column label="认领志愿者" align="center" prop="studentName" width="120" />
@@ -122,24 +130,28 @@ function formatStatus(status) {
   return found ? found.label : status
 }
 
-function buildDownload(urls) {
-  const first = (urls || '').split(',')[0]
-  if (!first) {
+function buildDownloadUrl(url) {
+  const value = (url || '').trim()
+  if (!value) {
     return '#'
   }
-  // 有效的服务器相对路径（如 /profile/upload/...）
-  if (first.startsWith('/profile/')) {
-    return import.meta.env.VITE_APP_BASE_API + first
+  if (value.startsWith('/profile/')) {
+    return import.meta.env.VITE_APP_BASE_API + value
   }
-  // 微信小程序临时路径（http://tmp/...）或其他无效路径
-  if (first.startsWith('http://tmp/') || first.startsWith('wxfile://')) {
+  if (value.startsWith('http://tmp/') || value.startsWith('wxfile://')) {
     return '#'
   }
-  // 其他完整URL直接返回
-  if (first.startsWith('http://') || first.startsWith('https://')) {
-    return first
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return value
   }
-  return import.meta.env.VITE_APP_BASE_API + first
+  return import.meta.env.VITE_APP_BASE_API + value
+}
+
+function parseDownloadUrls(urls) {
+  return (urls || '')
+    .split(',')
+    .map(item => buildDownloadUrl(item))
+    .filter(item => item && item !== '#')
 }
 
 function handleDelete(row) {
@@ -158,5 +170,10 @@ getList()
 <style scoped>
 .text-grey {
   color: #909399;
+}
+.file-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 </style>

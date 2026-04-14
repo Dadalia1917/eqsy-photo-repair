@@ -22,6 +22,9 @@ import com.ruoyi.system.service.IRepairTaskService;
 @RequestMapping("/app/repair/task")
 public class AppRepairTaskController extends BaseController
 {
+    private static final int MAX_IMAGE_COUNT = 5;
+    private static final String URL_SEPARATOR = ",";
+
     @Autowired
     private IRepairTaskService repairTaskService;
 
@@ -33,6 +36,18 @@ public class AppRepairTaskController extends BaseController
         {
             return error("提交失败，参数不完整");
         }
+
+        String normalizedSourceUrls = normalizeUrlList(body.getSourceUrls());
+        int sourceCount = countUrlItems(normalizedSourceUrls);
+        if (sourceCount <= 0)
+        {
+            return error("提交失败，未检测到有效图片");
+        }
+        if (sourceCount > MAX_IMAGE_COUNT)
+        {
+            return error("一次最多上传5张图片");
+        }
+        body.setSourceUrls(normalizedSourceUrls);
 
         Long taskId = repairTaskService.submitTask(body, getUserId(), getUsername());
         AjaxResult ajax = success("提交成功");
@@ -58,5 +73,35 @@ public class AppRepairTaskController extends BaseController
             return error("任务不存在");
         }
         return success(task);
+    }
+
+    private int countUrlItems(String urls)
+    {
+        String[] items = StringUtils.split(urls, URL_SEPARATOR);
+        return items == null ? 0 : items.length;
+    }
+
+    private String normalizeUrlList(String urls)
+    {
+        String[] rawItems = StringUtils.split(urls, URL_SEPARATOR);
+        if (rawItems == null || rawItems.length == 0)
+        {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (String item : rawItems)
+        {
+            String value = StringUtils.trimToEmpty(item);
+            if (StringUtils.isBlank(value))
+            {
+                continue;
+            }
+            if (builder.length() > 0)
+            {
+                builder.append(URL_SEPARATOR);
+            }
+            builder.append(value);
+        }
+        return builder.toString();
     }
 }

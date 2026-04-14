@@ -38,8 +38,12 @@
     <!-- 3. 接收修复结果 -->
     <view class="card" style="margin-top: 30rpx;">
       <view class="section-title">3. 请接收修复好的照片</view>
-      <view class="result-box" v-if="resultImageUrl">
-        <image :src="resultImageUrl" mode="aspectFit" class="result-image"></image>
+      <view class="result-box" v-if="resultImageUrls.length > 0">
+        <view class="result-grid">
+          <view class="result-item" v-for="(img, idx) in resultImageUrls" :key="idx" @tap="previewResultImage(idx)">
+            <image :src="img" mode="aspectFill" class="result-image"></image>
+          </view>
+        </view>
       </view>
       <view class="result-placeholder" v-else>
         <text>{{ resultText }}</text>
@@ -55,7 +59,7 @@
           <text v-if="isRefreshing" class="refresh-spin">⟳</text>
           <text>{{ isRefreshing ? '刷新中...' : '刷新处理结果' }}</text>
         </view>
-        <view class="btn btn-save action-btn" :class="!resultImageUrl ? 'is-disabled' : ''" @tap="saveResultImage">保存照片</view>
+        <view class="btn btn-save action-btn" :class="resultImageUrls.length === 0 ? 'is-disabled' : ''" @tap="saveResultImage">保存照片</view>
       </view>
     </view>
   </view>
@@ -78,7 +82,7 @@ export default {
       isSubmitting: false,
       isRefreshing: false,
       latestTaskId: null,
-      resultImageUrl: '',
+      resultImageUrls: [],
       resultVideoUrl: '',
       resultText: '提交任务后，点击“刷新处理结果”可查看修复完成的图片。'
     }
@@ -117,6 +121,40 @@ export default {
     },
     sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms))
+    },
+    normalizeResourceUrl(rawUrl) {
+      const value = String(rawUrl || '').trim()
+      if (!value) {
+        return ''
+      }
+      if (value.startsWith('http://tmp/') || value.startsWith('wxfile://')) {
+        return ''
+      }
+      return value.startsWith('http') ? value : config.staticUrl + value
+    },
+    parseResourceUrlList(urls) {
+      return String(urls || '')
+        .split(',')
+        .map(item => this.normalizeResourceUrl(item))
+        .filter(item => !!item)
+    },
+    parseUploadFileNames(uploadRes) {
+      if (!uploadRes || typeof uploadRes !== 'object') {
+        return []
+      }
+      const values = []
+      if (uploadRes.fileName) {
+        values.push(uploadRes.fileName)
+      }
+      if (uploadRes.fileNames) {
+        values.push(...String(uploadRes.fileNames).split(','))
+      }
+      if (uploadRes.url && !uploadRes.fileName && !uploadRes.fileNames) {
+        const url = String(uploadRes.url)
+        const pathMatch = url.match(/^https?:\/\/[^/]+(\/.*)$/)
+        values.push(pathMatch ? pathMatch[1] : url)
+      }
+      return values.map(item => String(item || '').trim()).filter(item => !!item)
     },
     async uploadWithRetry(filePath, maxRetry = 1) {
       let lastErr = null
@@ -197,9 +235,13 @@ export default {
         const fileNames = []
         for (let i = 0; i < this.imageFiles.length; i++) {
           const uploadRes = await this.uploadWithRetry(this.imageFiles[i], 1)
-          fileNames.push(uploadRes.fileName)
+          const uploadedFiles = this.parseUploadFileNames(uploadRes)
+          if (uploadedFiles.length === 0) {
+            throw new Error('上传成功但未返回文件地址')
+          }
+          fileNames.push(...uploadedFiles)
         }
-        const sourceUrls = fileNames.join(',')
+        const sourceUrls = fileNames.slice(0, 5).join(',')
         await this.sleep(SUBMIT_DELAY_MS)
 
         // 提交修复任务
@@ -215,6 +257,7 @@ export default {
           this.latestTaskId = res.taskId || null
           this.imageFiles = []
           this.aiPrompt = ''
+          this.resultImageUrls = []
           this.resultText = '任务已提交，正在处理中，请稍后点击“刷新处理结果”。'
         } else {
           this.$modal.msgError(res.msg || "提交失败")
@@ -239,7 +282,7 @@ export default {
         })
       } catch (e) {
         const errMsg = this.resolveRequestError(e, '刷新失败，请稍后重试')
-        this.resultImageUrl = ''
+        this.resultImageUrls = []
         this.resultVideoUrl = ''
         this.resultText = errMsg
         if (showToast) {
@@ -249,7 +292,7 @@ export default {
       }
 
       if (!res || !res.rows || res.rows.length === 0) {
-        this.resultImageUrl = ''
+        this.resultImageUrls = []
         this.resultVideoUrl = ''
         this.resultText = '暂无历史任务，先提交一张照片开始修复。'
         if (showToast) {
@@ -267,20 +310,48 @@ export default {
         this.resultVideoUrl = ''
       }
       if (latest.resultUrls) {
-        const first = String(latest.resultUrls).split(',')[0]
-        this.resultImageUrl = first.startsWith('http') ? first : config.staticUrl + first
-        this.resultText = '修复已完成，您可以预览并保存图片。'
+        this.resultImageUrls = this.parseResourceUrlList(latest.resultUrls)
+        this.resultText = this.resultImageUrls.length > 0 ? `修复已完成，共 ${this.resultImageUrls.length} 张，可预览并保存。` : '修复已完成，结果文件暂不可预览。'
         if (showToast) {
           this.$modal.msgSuccess('已刷新，修复结果可查看')
         }
       } else {
-        this.resultImageUrl = ''
+        this.resultImageUrls = []
         const progress = latest.progress || 0
         this.resultText = `正在处理中，当前进度 ${progress}%`
         if (showToast) {
           this.$modal.msgSuccess(`已刷新，当前进度 ${progress}%`)
         }
       }
+    },
+    previewResultImage(index) {
+      if (!this.resultImageUrls || this.resultImageUrls.length === 0) {
+        return
+      }
+      uni.previewImage({
+        current: this.resultImageUrls[index] || this.resultImageUrls[0],
+        urls: this.resultImageUrls
+      })
+    },
+    downloadAndSaveImage(url) {
+      return new Promise((resolve, reject) => {
+        uni.downloadFile({
+          url: encodeURI(url),
+          timeout: DOWNLOAD_TIMEOUT_MS,
+          success: (res) => {
+            if (res.statusCode !== 200) {
+              reject(new Error('图片下载失败'))
+              return
+            }
+            uni.saveImageToPhotosAlbum({
+              filePath: res.tempFilePath,
+              success: () => resolve(),
+              fail: () => reject(new Error('保存失败，请授权相册权限'))
+            })
+          },
+          fail: (error) => reject(error)
+        })
+      })
     },
     downloadResultVideo() {
       if (!this.resultVideoUrl) return
@@ -312,38 +383,29 @@ export default {
         }
       })
     },
-    saveResultImage() {
-      if (!this.resultImageUrl) {
+    async saveResultImage() {
+      if (!this.resultImageUrls || this.resultImageUrls.length === 0) {
         this.$modal.msgError('暂无可保存图片')
         return
       }
-      this.$modal.loading('正在保存图片...')
-      uni.downloadFile({
-        url: encodeURI(this.resultImageUrl),
-        timeout: DOWNLOAD_TIMEOUT_MS,
-        success: (res) => {
-          if (res.statusCode === 200) {
-            uni.saveImageToPhotosAlbum({
-              filePath: res.tempFilePath,
-              success: () => {
-                this.$modal.closeLoading()
-                this.$modal.msgSuccess('已保存到相册')
-              },
-              fail: () => {
-                this.$modal.closeLoading()
-                this.$modal.msgError('保存失败，请授权相册权限')
-              }
-            })
-          } else {
-            this.$modal.closeLoading()
-            this.$modal.msgError('图片下载失败')
-          }
-        },
-        fail: (error) => {
-          this.$modal.closeLoading()
-          this.$modal.msgError(this.resolveRequestError(error, '图片下载失败，请检查网络'))
+      this.$modal.loading('正在批量保存图片...')
+      let successCount = 0
+      for (let i = 0; i < this.resultImageUrls.length; i++) {
+        try {
+          await this.downloadAndSaveImage(this.resultImageUrls[i])
+          successCount++
+        } catch (error) {
+          console.error('saveResultImage failed:', error)
         }
-      })
+      }
+      this.$modal.closeLoading()
+      if (successCount === this.resultImageUrls.length) {
+        this.$modal.msgSuccess(`已保存 ${successCount} 张图片到相册`)
+      } else if (successCount > 0) {
+        this.$modal.msg(`已保存 ${successCount}/${this.resultImageUrls.length} 张，部分图片保存失败`)
+      } else {
+        this.$modal.msgError('保存失败，请检查网络或相册权限')
+      }
     }
   }
 }
@@ -403,13 +465,24 @@ page { background-color: #f5f6f7; }
 .btn-primary { background: linear-gradient(90deg, #4dc4b0, #3eb49f); color: #fff; height: 110rpx; line-height: 110rpx; font-size: 40rpx; border-radius: 55rpx; box-shadow: 0 10rpx 24rpx rgba(62,180,159,0.3); }
 .result-box {
   width: 100%;
-  height: 320rpx;
+  min-height: 220rpx;
   background: #f8fbfb;
   border-radius: 16rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 16rpx;
+  box-sizing: border-box;
   overflow: hidden;
+}
+.result-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+.result-item {
+  width: calc(33.33% - 8rpx);
+  aspect-ratio: 1 / 1;
+  border-radius: 12rpx;
+  overflow: hidden;
+  background: #e7efed;
 }
 .result-image {
   width: 100%;
