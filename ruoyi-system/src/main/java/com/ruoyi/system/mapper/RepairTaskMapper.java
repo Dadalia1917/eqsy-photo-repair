@@ -6,7 +6,7 @@ import com.ruoyi.system.domain.RepairTask;
 import com.ruoyi.system.domain.vo.RepairTrendVO;
 
 /**
- * 淇��浠诲姟Mapper
+ * 修复任务 Mapper
  */
 public interface RepairTaskMapper
 {
@@ -21,6 +21,12 @@ public interface RepairTaskMapper
     public int deleteRepairTaskByIds(@Param("taskIds") Long[] taskIds);
 
     public int updateResultVideoUrl(@Param("taskId") Long taskId, @Param("resultVideoUrl") String resultVideoUrl);
+
+    public int updateTaskResourceUrls(@Param("taskId") Long taskId,
+            @Param("sourceUrls") String sourceUrls,
+            @Param("resultUrls") String resultUrls,
+            @Param("resultVideoUrl") String resultVideoUrl,
+            @Param("updateBy") String updateBy);
 
     public List<String> selectAllResourceUrls();
 

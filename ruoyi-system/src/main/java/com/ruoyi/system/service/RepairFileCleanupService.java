@@ -1,12 +1,14 @@
 package com.ruoyi.system.service;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,6 +26,7 @@ import com.ruoyi.system.mapper.RepairTaskMapper;
 public class RepairFileCleanupService
 {
     private static final Logger log = LoggerFactory.getLogger(RepairFileCleanupService.class);
+    private static final String CLEANUP_OPERATOR = "system-cleanup";
     private static final int DEFAULT_EXPIRE_HOURS = 48;
     private static final int MAX_EXPIRE_HOURS = 24 * 30;
 
@@ -97,6 +100,47 @@ public class RepairFileCleanupService
         return deletedCount;
     }
 
+    /**
+     * 清理repair_task中指向本地不存在文件的URL
+     * @return 更新的任务数量
+     */
+    public int cleanBrokenTaskResourceUrls()
+    {
+        List<RepairTask> tasks = repairTaskMapper.selectRepairTaskList(new RepairTask());
+        int changedTasks = 0;
+        int removedUrls = 0;
+
+        for (RepairTask task : tasks)
+        {
+            NormalizeResult source = normalizeResourceUrls(task.getSourceUrls(), false);
+            NormalizeResult result = normalizeResourceUrls(task.getResultUrls(), true);
+            NormalizeResult video = normalizeResourceUrls(task.getResultVideoUrl(), true);
+
+            String newSourceUrls = source.value;
+            String newResultUrls = result.value;
+            String newResultVideoUrl = video.value;
+
+            boolean changed = !Objects.equals(StringUtils.trimToEmpty(task.getSourceUrls()), StringUtils.trimToEmpty(newSourceUrls))
+                    || !Objects.equals(StringUtils.trimToEmpty(task.getResultUrls()), StringUtils.trimToEmpty(newResultUrls))
+                    || !Objects.equals(StringUtils.trimToEmpty(task.getResultVideoUrl()), StringUtils.trimToEmpty(newResultVideoUrl));
+            if (!changed)
+            {
+                continue;
+            }
+
+            int rows = repairTaskMapper.updateTaskResourceUrls(task.getTaskId(), newSourceUrls, newResultUrls,
+                    newResultVideoUrl, CLEANUP_OPERATOR);
+            if (rows > 0)
+            {
+                changedTasks++;
+                removedUrls += source.removedCount + result.removedCount + video.removedCount;
+            }
+        }
+
+        log.info("repair_task失效URL清理完成，更新任务数: {}, 删除URL数: {}", changedTasks, removedUrls);
+        return changedTasks;
+    }
+
     private int normalizeExpireHours(Integer expireHours)
     {
         if (expireHours == null || expireHours < 1)
@@ -104,6 +148,56 @@ public class RepairFileCleanupService
             return DEFAULT_EXPIRE_HOURS;
         }
         return Math.min(expireHours, MAX_EXPIRE_HOURS);
+    }
+
+    private NormalizeResult normalizeResourceUrls(String resources, boolean nullableWhenEmpty)
+    {
+        if (StringUtils.isBlank(resources))
+        {
+            return new NormalizeResult(nullableWhenEmpty ? null : "", 0);
+        }
+        String[] arr = resources.split(",");
+        List<String> validUrls = new ArrayList<>();
+        int removedCount = 0;
+        for (String item : arr)
+        {
+            String url = StringUtils.trimToEmpty(item);
+            if (StringUtils.isBlank(url))
+            {
+                continue;
+            }
+            if (shouldKeepResourceUrl(url))
+            {
+                validUrls.add(url);
+            }
+            else
+            {
+                removedCount++;
+            }
+        }
+
+        if (validUrls.isEmpty())
+        {
+            return new NormalizeResult(nullableWhenEmpty ? null : "", removedCount);
+        }
+        return new NormalizeResult(StringUtils.join(validUrls, ","), removedCount);
+    }
+
+    private boolean shouldKeepResourceUrl(String resource)
+    {
+        String raw = StringUtils.trimToEmpty(resource);
+        if (StringUtils.isBlank(raw) || raw.startsWith("wxfile://") || raw.startsWith("http://tmp/"))
+        {
+            return false;
+        }
+
+        String absolutePath = resolveLocalAbsolutePath(raw);
+        if (StringUtils.isBlank(absolutePath))
+        {
+            // 非本地/profile资源不做删除，避免误清理外链
+            return true;
+        }
+        return Files.exists(Paths.get(absolutePath));
     }
 
     private Set<String> getActiveResourceAbsolutePaths()
@@ -241,5 +335,17 @@ public class RepairFileCleanupService
             return null;
         }
         return target.toString();
+    }
+
+    private static class NormalizeResult
+    {
+        private final String value;
+        private final int removedCount;
+
+        private NormalizeResult(String value, int removedCount)
+        {
+            this.value = value;
+            this.removedCount = removedCount;
+        }
     }
 }

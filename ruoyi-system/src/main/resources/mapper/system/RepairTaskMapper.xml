@@ -171,6 +171,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where task_id = #{taskId}
     </update>
 
+    <update id="updateTaskResourceUrls">
+        update repair_task
+        set source_urls = #{sourceUrls},
+            result_urls = #{resultUrls},
+            result_video_url = #{resultVideoUrl},
+            update_by = #{updateBy},
+            update_time = now()
+        where task_id = #{taskId}
+    </update>
+
     <select id="selectAllResourceUrls" resultType="String">
         select source_urls from repair_task where source_urls is not null and source_urls != ''
         union all

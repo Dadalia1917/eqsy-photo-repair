@@ -8,7 +8,7 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.service.RepairFileCleanupService;
 
 /**
- * 上传临时文件清理任务
+ * 修复任务附件清理任务
  */
 @Component("repairFileCleanupTask")
 public class RepairFileCleanupTask
@@ -38,5 +38,14 @@ public class RepairFileCleanupTask
         }
         int deleted = repairFileCleanupService.cleanUploadTempFiles(hours);
         log.info("上传临时文件清理完成，删除文件数: {}", deleted);
+    }
+
+    /**
+     * 清理repair_task中指向本地不存在文件的URL
+     */
+    public void cleanBrokenTaskResourceUrls()
+    {
+        int changed = repairFileCleanupService.cleanBrokenTaskResourceUrls();
+        log.info("repair_task失效URL清理任务完成，更新任务数: {}", changed);
     }
 }
