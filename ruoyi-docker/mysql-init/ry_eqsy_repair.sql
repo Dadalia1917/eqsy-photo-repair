@@ -516,7 +516,7 @@ CREATE TABLE `sys_job`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注信息',
   PRIMARY KEY (`job_id`, `job_name`, `job_group`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 101 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 102 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_job
@@ -525,6 +525,7 @@ INSERT INTO `sys_job` VALUES (1, '系统默认（无参）', 'DEFAULT', 'ryTask.
 INSERT INTO `sys_job` VALUES (2, '系统默认（有参）', 'DEFAULT', 'ryTask.ryParams(\'ry\')', '0/15 * * * * ?', '3', '1', '1', 'admin', '2026-03-15 12:49:47', '', NULL, '');
 INSERT INTO `sys_job` VALUES (3, '系统默认（多参）', 'DEFAULT', 'ryTask.ryMultipleParams(\'ry\', true, 2000L, 316.50D, 100)', '0/20 * * * * ?', '3', '1', '1', 'admin', '2026-03-15 12:49:47', '', NULL, '');
 INSERT INTO `sys_job` VALUES (100, '上传临时文件清理', 'DEFAULT', 'repairFileCleanupTask.cleanUploadTempFiles(\'48\')', '0 0 3 * * ?', '3', '1', '1', 'admin', '2026-04-13 15:20:16', '', NULL, '每天03:00清理upload/temp中过期且未被任务引用的文件（默认暂停）');
+INSERT INTO `sys_job` VALUES (101, '孤立上传文件清理', 'DEFAULT', 'repairFileCleanupTask.cleanOrphanUploadFiles(\'30\')', '0 30 3 * * ?', '3', '1', '1', 'admin', '2026-04-22 00:00:00', '', NULL, '每天03:30清理upload目录中数据库无引用且超过30天的孤立照片文件（默认暂停，启用前建议先手动验证）');
 
 -- ----------------------------
 -- Table structure for sys_job_log

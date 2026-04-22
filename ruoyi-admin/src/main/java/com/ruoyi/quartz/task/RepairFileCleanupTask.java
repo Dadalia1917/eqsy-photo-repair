@@ -48,4 +48,26 @@ public class RepairFileCleanupTask
         int changed = repairFileCleanupService.cleanBrokenTaskResourceUrls();
         log.info("repair_task失效URL清理任务完成，更新任务数: {}", changed);
     }
+
+    /**
+     * 清理 upload/ 目录中数据库无引用且超过指定天数的孤立文件
+     * @param keepDays 保留天数字符串，空则默认30天
+     */
+    public void cleanOrphanUploadFiles(String keepDays)
+    {
+        Integer days = null;
+        if (StringUtils.isNotBlank(keepDays))
+        {
+            try
+            {
+                days = Integer.valueOf(keepDays.trim());
+            }
+            catch (Exception e)
+            {
+                log.warn("孤立文件清理任务参数非法，使用默认值30天: {}", keepDays);
+            }
+        }
+        int deleted = repairFileCleanupService.cleanOrphanUploadFiles(days);
+        log.info("孤立上传文件清理任务完成，删除文件数: {}", deleted);
+    }
 }
