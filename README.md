@@ -492,6 +492,25 @@ docker compose ps
 
 ## 更新记录
 
+### 2026.4.22（v1.6.0 补充）
+
+- 修复服务器部署后小程序无法连接后端（502 Bad Gateway）的问题：根本原因为 `mysql-init/` 目录为空，数据库表未初始化，Spring Boot 启动时查询 `sys_config` 失败导致服务崩溃。已将 `ry_eqsy_repair.sql` 复制至 `ruoyi-docker/mysql-init/`，后续全新部署时 MySQL 容器自动执行初始化，无需手动导入。
+- 修复 `ruoyi-docker/.gitignore` 错误屏蔽 `mysql-init/ry_eqsy_repair.sql`（导致 SQL 文件从未上传到 GitHub）：已清空该文件，不再忽略任何文件。
+- 定位微信一键登录"获取手机号失败，请重试"错误：根本原因为服务器 `.env` 文件中 `WECHAT_SECRET=please_change_me`（占位符未替换），导致后端无法调用微信 API 获取 access_token。修复方法：在服务器 `.env` 中填入真实 AppSecret 后重启 `eqsy-admin` 容器。
+- 新增孤立上传文件自动清理能力：`RepairFileCleanupService.cleanOrphanUploadFiles(days)` 扫描整个 `upload/` 目录，删除数据库中已无任务引用且超过指定天数（默认 30 天）的孤立照片/视频文件，头像目录不受影响。
+- 新增 Quartz 调度入口：`repairFileCleanupTask.cleanOrphanUploadFiles('30')`，每天 03:30 执行，默认暂停状态，建议在后台手动触发一次验证后再启用。
+
+#### v1.6.0 任务配置建议
+
+- 在后台"定时任务"中找到"孤立上传文件清理"（job_id=101），先点击"执行一次"确认日志输出正常，再将状态改为"正常"启用定时。
+- 若服务器数据库已存在（非首次部署），需手动执行以下 SQL 注册该任务：
+  ```sql
+  INSERT IGNORE INTO sys_job VALUES (101, '孤立上传文件清理', 'DEFAULT',
+    'repairFileCleanupTask.cleanOrphanUploadFiles(\'30\')',
+    '0 30 3 * * ?', '3', '1', '1', 'admin', NOW(), '', NULL,
+    '每天03:30清理upload目录中数据库无引用且超过30天的孤立照片文件');
+  ```
+
 ### 2026.4.16（v1.5.1）
 
 - 已清理 `repair_task` 中指向本地不存在文件的历史 URL，避免小程序/后台访问无效附件反复报错。
