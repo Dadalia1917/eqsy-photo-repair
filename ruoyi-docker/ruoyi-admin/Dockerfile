@@ -1,4 +1,4 @@
-FROM maven:3.9.9-eclipse-temurin-17 AS builder
+FROM maven:3.9-eclipse-temurin-17-alpine AS builder
 WORKDIR /workspace
 
 COPY pom.xml ./
@@ -18,8 +18,8 @@ COPY ruoyi-quartz/src ruoyi-quartz/src
 
 RUN mvn -T 1C -DskipTests clean package -pl ruoyi-admin -am
 
-FROM eclipse-temurin:17-jre
-LABEL version="1.0.3" maintainer="eqsy"
+FROM eclipse-temurin:17-jre-alpine
+LABEL version="2.0.0" maintainer="eqsy"
 WORKDIR /app
 
 ENV TZ=Asia/Shanghai
