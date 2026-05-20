@@ -53,6 +53,68 @@ public class RepairFileCleanupService
         }
     }
 
+    /**
+     * 清理 upload/ 目录中数据库无引用且超过指定天数的孤立文件（头像目录除外）
+     * @param keepDays 保留天数，默认30天，最大365天
+     * @return 删除的文件数
+     */
+    public int cleanOrphanUploadFiles(Integer keepDays)
+    {
+        int safeDays = (keepDays == null || keepDays < 1) ? 30 : Math.min(keepDays, 365);
+        Path uploadRoot = Paths.get(RuoYiConfig.getUploadPath()).toAbsolutePath().normalize();
+        Path avatarRoot = Paths.get(RuoYiConfig.getAvatarPath()).toAbsolutePath().normalize();
+        if (!Files.exists(uploadRoot))
+        {
+            return 0;
+        }
+
+        Set<String> activeFileSet = getActiveResourceAbsolutePaths();
+        long expireBefore = System.currentTimeMillis() - safeDays * 86400_000L;
+        int deletedCount = 0;
+
+        try (Stream<Path> stream = Files.walk(uploadRoot))
+        {
+            List<Path> files = stream.filter(Files::isRegularFile).collect(Collectors.toList());
+            for (Path file : files)
+            {
+                Path normalized = file.toAbsolutePath().normalize();
+                if (!normalized.startsWith(uploadRoot))
+                {
+                    continue;
+                }
+                // 跳过头像目录（头像引用在 sys_user 表，未纳入 activeFileSet）
+                if (normalized.startsWith(avatarRoot))
+                {
+                    continue;
+                }
+                // 跳过数据库仍有引用的文件
+                if (activeFileSet.contains(normalized.toString()))
+                {
+                    continue;
+                }
+                // 跳过未过期的文件
+                long lastModified = Files.getLastModifiedTime(normalized).toMillis();
+                if (lastModified >= expireBefore)
+                {
+                    continue;
+                }
+                if (Files.deleteIfExists(normalized))
+                {
+                    deletedCount++;
+                    log.info("孤立上传文件已清理: {}", normalized);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("清理孤立上传文件失败", e);
+        }
+
+        clearEmptyDirectories(uploadRoot);
+        log.info("孤立上传文件清理完成，保留天数: {}天，删除文件数: {}", safeDays, deletedCount);
+        return deletedCount;
+    }
+
     public int cleanUploadTempFiles(Integer expireHours)
     {
         int safeHours = normalizeExpireHours(expireHours);
