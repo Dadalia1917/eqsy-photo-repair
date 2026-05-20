@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,9 +45,10 @@ public class RepairTaskServiceImpl implements IRepairTaskService
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Long submitTask(RepairTask repairTask, Long userId, String userName)
     {
-        repairTask.setTaskNo(buildTaskNo());
+        repairTask.setTaskNo("TEMP");
         repairTask.setUserId(userId);
         repairTask.setUserName(userName);
         repairTask.setProgress(5);
@@ -59,7 +60,11 @@ public class RepairTaskServiceImpl implements IRepairTaskService
         repairTask.setStatus(STATUS_WAIT_STUDENT);
 
         repairTaskMapper.insertRepairTask(repairTask);
-        return repairTask.getTaskId();
+        Long taskId = repairTask.getTaskId();
+        String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        repairTask.setTaskNo(datePrefix + "-" + taskId);
+        repairTaskMapper.updateRepairTask(repairTask);
+        return taskId;
     }
 
     @Override
@@ -173,11 +178,6 @@ public class RepairTaskServiceImpl implements IRepairTaskService
             result.add(vo);
         }
         return result;
-    }
-
-    private String buildTaskNo()
-    {
-        return "EQSY" + System.currentTimeMillis() + RandomStringUtils.randomNumeric(4);
     }
 
     @Override

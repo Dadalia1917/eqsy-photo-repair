@@ -16,6 +16,10 @@
     //#ifdef H5
     checkLogin()
     //#endif
+    // 微信小程序：已有 Token 则直接跳主页，无需重复登录
+    //#ifdef MP-WEIXIN
+    checkLoginWx()
+    //#endif
   }
 
   function initConfig() {
@@ -26,6 +30,14 @@
   function checkLogin() {
     if (!getToken()) {
       uni.reLaunch({ url: '/pages/login' })
+    }
+  }
+  //#endif
+
+  //#ifdef MP-WEIXIN
+  function checkLoginWx() {
+    if (getToken()) {
+      uni.reLaunch({ url: '/pages/index' })
     }
   }
   //#endif

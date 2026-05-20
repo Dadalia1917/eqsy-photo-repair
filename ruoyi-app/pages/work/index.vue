@@ -1,66 +1,102 @@
 ﻿<template>
-  <view class="work-container elder-large">
-    <view class="hero">
-      <text class="hero-title">上传老照片</text>
-      <text class="hero-sub">交给志愿者帮您焕然一新</text>
-    </view>
-
-    <!-- 1. 上传照片 -->
-    <view class="card">
-      <view class="section-title">1. 请选择要修复的照片（最多5张）</view>
-      <view class="upload-list" v-if="imageFiles.length > 0">
-        <view class="upload-item" v-for="(img, idx) in imageFiles" :key="idx">
-          <image :src="img" mode="aspectFill"></image>
-          <view class="remove-btn" @tap="removeImage(idx)">×</view>
-        </view>
-        <view class="upload-item upload-add" v-if="imageFiles.length < 5" @tap="chooseImages">
-          <text class="add-icon">+</text>
-        </view>
+  <view class="work-page">
+    <!-- 顶部品牌栏 -->
+    <view class="page-header">
+      <view class="header-circle header-circle--1"></view>
+      <view class="header-circle header-circle--2"></view>
+      <view class="header-inner">
+        <text class="page-title">上传老照片</text>
+        <text class="page-sub">交给志愿者帮您焕然一新</text>
       </view>
-      <button class="btn btn-upload" v-if="imageFiles.length === 0" @click="chooseImages">点击这里打开相册/相机</button>
-      <text class="upload-count" v-if="imageFiles.length > 0">已选 {{ imageFiles.length }}/5 张</text>
     </view>
 
-    <!-- 2. 留言框 -->
-    <view class="card">
-      <view class="prompt-header">
-        <view class="section-title" style="margin-bottom: 8rpx;">2. 想要什么，留言</view>
-        <text class="prompt-tip">描述越清楚，修复效果越贴近你的期待</text>
+    <!-- 主内容区 -->
+    <view class="page-body">
+
+      <!-- 步骤一：上传照片 -->
+      <view class="step-card">
+        <view class="step-label">
+          <view class="step-num">1</view>
+          <text class="step-text">选择要修复的照片（最多5张）</text>
+        </view>
+        <view class="upload-grid" v-if="imageFiles.length > 0">
+          <view class="upload-thumb" v-for="(img, idx) in imageFiles" :key="idx">
+            <image :src="img" mode="aspectFill" class="thumb-img"></image>
+            <view class="thumb-del" @tap="removeImage(idx)">✕</view>
+          </view>
+          <view class="upload-thumb upload-add" v-if="imageFiles.length < 5" @tap="chooseImages">
+            <text class="add-plus">+</text>
+          </view>
+        </view>
+        <button class="btn-upload" v-if="imageFiles.length === 0" @click="chooseImages">
+          <text class="upload-icon">📷</text> 打开相册 / 相机
+        </button>
+        <text class="upload-hint" v-if="imageFiles.length > 0">已选 {{ imageFiles.length }} / 5 张</text>
       </view>
-      <textarea v-model="aiPrompt" class="prompt-input" placeholder="例如：我想把这张黑白照片变成彩色的... 或者：照片角被撕破了，请尽量帮我拼全..." maxlength="200"></textarea>
-    </view>
 
-    <!-- 4. 提交任务 -->
-    <view class="action-card" style="margin-top: 40rpx;">
-      <button class="btn btn-primary" @click="submitTask" :loading="isSubmitting" :disabled="isSubmitting">{{ submitBtnText }}</button>
-    </view>
+      <!-- 步骤二：留言 -->
+      <view class="step-card">
+        <view class="step-label">
+          <view class="step-num">2</view>
+          <view>
+            <text class="step-text">留言给志愿者</text>
+            <text class="step-sub">描述越清楚，效果越好</text>
+          </view>
+        </view>
+        <textarea
+          v-model="aiPrompt"
+          class="prompt-textarea"
+          placeholder="例如：照片有划痕，请帮修复；黑白照片想要变彩色..."
+          maxlength="200"
+        ></textarea>
+      </view>
 
-    <!-- 3. 接收修复结果 -->
-    <view class="card" style="margin-top: 30rpx;">
-      <view class="section-title">3. 请接收修复好的照片</view>
-      <view class="result-box" v-if="resultImageUrls.length > 0">
-        <view class="result-grid">
-          <view class="result-item" v-for="(img, idx) in resultImageUrls" :key="idx" @tap="previewResultImage(idx)">
-            <image :src="img" mode="aspectFill" class="result-image"></image>
+      <!-- 提交按钮 -->
+      <button class="btn-submit" @click="submitTask" :loading="isSubmitting" :disabled="isSubmitting">
+        {{ submitBtnText }}
+      </button>
+
+      <!-- 步骤三：接收结果 -->
+      <view class="step-card result-card">
+        <view class="result-header">
+          <view class="step-label" style="margin-bottom: 0;">
+            <view class="step-num">3</view>
+            <text class="step-text">接收修复好的照片</text>
+          </view>
+          <view class="all-history-link" @tap="goToHistory">全部记录</view>
+        </view>
+
+        <!-- 有图结果 -->
+        <view class="result-list" v-if="resultImageUrls.length > 0">
+          <view class="result-item-block" v-for="(img, idx) in resultImageUrls" :key="idx" @tap="previewResultImage(idx)">
+            <text class="result-item-label">修复照片 {{ idx + 1 }}</text>
+            <image :src="img" mode="aspectFill" class="result-img-full"></image>
+          </view>
+        </view>
+        <view class="result-empty" v-else>
+          <text class="result-empty-icon">🖼️</text>
+          <text class="result-empty-text">{{ resultText }}</text>
+        </view>
+
+        <!-- 视频结果 -->
+        <view class="video-section" v-if="resultVideoUrl">
+          <text class="video-label">修复动态视频</text>
+          <video :src="resultVideoUrl" class="result-video" controls autoplay loop></video>
+          <view class="btn-secondary" style="margin-top:16rpx;" @tap="downloadResultVideo">下载视频到手机</view>
+        </view>
+
+        <!-- 操作按钮组 -->
+        <view class="result-actions">
+          <view class="btn-action btn-refresh" :class="isRefreshing ? 'is-disabled' : ''" @tap="handleRefreshClick">
+            <text v-if="isRefreshing" class="spin">⟳</text>
+            {{ isRefreshing ? '刷新中...' : '刷新处理结果' }}
+          </view>
+          <view class="btn-action btn-save" :class="resultImageUrls.length === 0 ? 'is-disabled' : ''" @tap="saveResultImage">
+            保存照片
           </view>
         </view>
       </view>
-      <view class="result-placeholder" v-else>
-        <text>{{ resultText }}</text>
-      </view>
-      <!-- 视频结果 -->
-      <view v-if="resultVideoUrl" class="video-section">
-        <view class="section-title" style="font-size:30rpx;margin-top:30rpx;">修复动态视频</view>
-        <video :src="resultVideoUrl" class="result-video" controls autoplay loop></video>
-        <view class="btn btn-download action-btn" style="margin-top:16rpx;" @tap="downloadResultVideo">下载视频到手机</view>
-      </view>
-      <view class="result-actions">
-        <view class="btn btn-refresh action-btn" :class="isRefreshing ? 'is-disabled' : ''" @tap="handleRefreshClick">
-          <text v-if="isRefreshing" class="refresh-spin">⟳</text>
-          <text>{{ isRefreshing ? '刷新中...' : '刷新处理结果' }}</text>
-        </view>
-        <view class="btn btn-save action-btn" :class="resultImageUrls.length === 0 ? 'is-disabled' : ''" @tap="saveResultImage">保存照片</view>
-      </view>
+
     </view>
   </view>
 </template>
@@ -383,6 +419,9 @@ export default {
         }
       })
     },
+    goToHistory() {
+      this.$tab.navigateTo('/pages/work/history')
+    },
     async saveResultImage() {
       if (!this.resultImageUrls || this.resultImageUrls.length === 0) {
         this.$modal.msgError('暂无可保存图片')
@@ -412,143 +451,394 @@ export default {
 </script>
 
 <style lang="scss">
-page { background-color: #f5f6f7; }
-.work-container { padding: 40rpx 30rpx; padding-bottom: 80rpx; }
-.hero {
-  text-align: center; margin-bottom: 50rpx;
-  .hero-title { display: block; font-size: 52rpx; font-weight: bold; color: #2b3d3a; margin-bottom: 16rpx;}
-  .hero-sub { display: block; font-size: 32rpx; color: #5f7d79; }
-}
-.card {
-  background: #fff; border-radius: 20rpx; padding: 40rpx; margin-bottom: 40rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.03);
-  .section-title { font-size: 36rpx; font-weight: bold; color: #333; margin-bottom: 30rpx; }
-}
-.btn-upload {
-  background: #f0f5f4; color: #3eb49f; border: 4rpx dashed #3eb49f; height: 100rpx; line-height: 90rpx; font-size: 36rpx; border-radius: 16rpx;
-}
-.upload-count { font-size: 26rpx; color: #8a9a97; margin-top: 10rpx; display: block; }
-.upload-list {
-  display: flex; flex-wrap: wrap; margin-bottom: 20rpx;
-  .upload-item {
-    position: relative; width: 180rpx; height: 180rpx; margin-right: 20rpx; margin-bottom: 20rpx; border-radius: 16rpx; overflow: hidden; background: #eee;
-    image { width: 100%; height: 100%; }
-  }
-  .remove-btn {
-    position: absolute; top: 4rpx; right: 4rpx; width: 44rpx; height: 44rpx; background: rgba(0,0,0,0.5);
-    color: #fff; font-size: 32rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; line-height: 1;
-  }
-  .upload-add {
-    background: #f0f5f4; border: 4rpx dashed #3eb49f; display: flex; align-items: center; justify-content: center;
-    .add-icon { font-size: 64rpx; color: #3eb49f; line-height: 1; }
-  }
-}
-.video-section { margin-top: 10rpx; }
-.result-video { width: 100%; height: 340rpx; border-radius: 16rpx; background: #000; }
-.btn-download {
-  background: #e8f5f2; color: #3eb49f; border: 2rpx solid #bfe6de;
-  height: 84rpx; line-height: 84rpx; border-radius: 14rpx; font-size: 30rpx; text-align: center;
+page {
+  background: #f0f7f5;
 }
 
-.prompt-header {
-  margin-bottom: 10rpx;
+/* ====== 页面顶部 ====== */
+.work-page {
+  min-height: 100vh;
+  background: #f0f7f5;
 }
 
-.prompt-tip {
-  font-size: 24rpx;
-  color: #8a9a97;
-}
-
-.prompt-input {
-  width: 100%; height: 220rpx; background: #f8fbfb; border-radius: 16rpx; padding: 30rpx; font-size: 32rpx; box-sizing: border-box; border: 2rpx solid #eee;
-}
-.btn-primary { background: linear-gradient(90deg, #4dc4b0, #3eb49f); color: #fff; height: 110rpx; line-height: 110rpx; font-size: 40rpx; border-radius: 55rpx; box-shadow: 0 10rpx 24rpx rgba(62,180,159,0.3); }
-.result-box {
-  width: 100%;
-  min-height: 220rpx;
-  background: #f8fbfb;
-  border-radius: 16rpx;
-  padding: 16rpx;
-  box-sizing: border-box;
+.page-header {
+  position: relative;
+  background: linear-gradient(135deg, #1f7f6f 0%, #3eb49f 100%);
+  padding: 70rpx 40rpx 60rpx;
   overflow: hidden;
 }
-.result-grid {
+
+.header-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+.header-circle--1 {
+  width: 280rpx;
+  height: 280rpx;
+  top: -70rpx;
+  right: -50rpx;
+}
+.header-circle--2 {
+  width: 200rpx;
+  height: 200rpx;
+  bottom: -50rpx;
+  left: -30rpx;
+}
+
+.header-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.page-title {
+  display: block;
+  font-size: 50rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 12rpx;
+}
+
+.page-sub {
+  display: block;
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ====== 主内容区 ====== */
+.page-body {
+  padding: 30rpx 30rpx 80rpx;
+  margin-top: -20rpx;
+}
+
+/* ====== 步骤卡片 ====== */
+.step-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 40rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
+}
+
+.step-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.step-num {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4dc4b0, #3eb49f);
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-text {
+  font-size: 38rpx;
+  font-weight: bold;
+  color: #2b3d3a;
+  line-height: 52rpx;
+}
+
+.step-sub {
+  display: block;
+  font-size: 28rpx;
+  color: #8a9a97;
+  margin-top: 4rpx;
+}
+
+/* ====== 上传区 ====== */
+.upload-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 12rpx;
+  gap: 20rpx;
+  margin-bottom: 16rpx;
 }
-.result-item {
-  width: calc(33.33% - 8rpx);
+
+.upload-thumb {
+  width: calc(50% - 10rpx);
   aspect-ratio: 1 / 1;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   overflow: hidden;
-  background: #e7efed;
+  position: relative;
+  background: #eef5f3;
 }
-.result-image {
+
+.thumb-img {
   width: 100%;
   height: 100%;
 }
-.result-placeholder {
+
+.thumb-del {
+  position: absolute;
+  top: 6rpx;
+  right: 6rpx;
+  width: 44rpx;
+  height: 44rpx;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 26rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-add {
+  border: 4rpx dashed #3eb49f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-plus {
+  font-size: 68rpx;
+  color: #3eb49f;
+  line-height: 1;
+}
+
+.btn-upload {
+  width: 100%;
+  background: #f0f5f4;
+  color: #3eb49f;
+  border: 4rpx dashed #3eb49f;
+  height: 110rpx;
+  line-height: 110rpx;
+  font-size: 36rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+
+  &::after {
+    border: none;
+  }
+}
+
+.upload-icon {
+  font-size: 40rpx;
+}
+
+.upload-hint {
+  font-size: 30rpx;
+  color: #8a9a97;
+  display: block;
+  text-align: center;
+  margin-top: 10rpx;
+}
+
+/* ====== 留言框 ====== */
+.prompt-textarea {
+  width: 100%;
+  height: 220rpx;
+  background: #f8fbfb;
+  border-radius: 16rpx;
+  padding: 26rpx;
+  font-size: 32rpx;
+  box-sizing: border-box;
+  border: 2rpx solid #eee;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* ====== 提交按钮 ====== */
+.btn-submit {
+  width: 100%;
+  background: linear-gradient(90deg, #4dc4b0, #3eb49f);
+  color: #fff;
+  height: 110rpx;
+  line-height: 110rpx;
+  font-size: 40rpx;
+  font-weight: bold;
+  border-radius: 55rpx;
+  box-shadow: 0 10rpx 24rpx rgba(62, 180, 159, 0.35);
+  margin-bottom: 30rpx;
+
+  &::after {
+    border: none;
+  }
+
+  &:active {
+    transform: translateY(2rpx);
+  }
+}
+
+/* ====== 结果卡片 ====== */
+.result-card {
+  .step-label {
+    margin-bottom: 0;
+  }
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.all-history-link {
+  font-size: 28rpx;
+  color: #3eb49f;
+  font-weight: 500;
+}
+
+.result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+  margin-bottom: 20rpx;
+}
+
+.result-item-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.result-item-label {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #2e8a6e;
+}
+
+.result-img-full {
+  width: 100%;
+  height: 480rpx;
+  border-radius: 20rpx;
+  border: 4rpx solid #3eb49f;
+  box-shadow: 0 6rpx 20rpx rgba(62, 180, 159, 0.22);
+  display: block;
+}
+
+.result-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+}
+
+.preview-icon {
+  font-size: 40rpx;
+}
+
+.result-empty {
   width: 100%;
   min-height: 120rpx;
   background: #f8fbfb;
   border: 2rpx dashed #d9e7e4;
   border-radius: 16rpx;
   padding: 24rpx;
-  color: #6f7f7c;
-  font-size: 28rpx;
-  line-height: 1.6;
-  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
 }
+
+.result-empty-icon {
+  font-size: 48rpx;
+}
+
+.result-empty-text {
+  font-size: 32rpx;
+  color: #6f7f7c;
+  text-align: center;
+  line-height: 1.7;
+}
+
+/* 视频 */
+.video-section {
+  margin-top: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.video-label {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #2b3d3a;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.result-video {
+  width: 100%;
+  height: 340rpx;
+  border-radius: 16rpx;
+  background: #000;
+}
+
+.btn-secondary {
+  background: #e8f5f2;
+  color: #3eb49f;
+  border: 2rpx solid #bfe6de;
+  height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 14rpx;
+  font-size: 30rpx;
+  text-align: center;
+}
+
+/* 操作按钮组 */
 .result-actions {
   display: flex;
   gap: 16rpx;
   margin-top: 20rpx;
 }
-.btn-refresh,
-.btn-save {
+
+.btn-action {
   flex: 1;
-  height: 84rpx;
-  line-height: 84rpx;
-  border-radius: 14rpx;
-  font-size: 30rpx;
-}
-.action-btn {
+  height: 96rpx;
+  line-height: 96rpx;
+  border-radius: 16rpx;
+  font-size: 32rpx;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8rpx;
+  font-weight: 600;
 }
+
 .btn-refresh {
   background: #eef7f5;
   color: #3eb49f;
   border: 2rpx solid #bfe6de;
+
+  &.is-disabled {
+    opacity: 0.7;
+  }
 }
+
 .btn-save {
   background: #f1f3f4;
   color: #5f7d79;
   border: 2rpx solid #dde5e2;
-}
-.btn-save.is-disabled {
-  opacity: 0.6;
+
+  &.is-disabled {
+    opacity: 0.6;
+  }
 }
 
-.btn-refresh.is-disabled {
-  opacity: 0.7;
-}
-
-.refresh-spin {
+.spin {
   display: inline-block;
-  animation: refresh-spin 0.9s linear infinite;
+  animation: spin-anim 0.9s linear infinite;
 }
 
-@keyframes refresh-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+@keyframes spin-anim {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 </style>

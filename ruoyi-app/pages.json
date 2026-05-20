@@ -21,6 +21,11 @@
       "navigationBarTitleText": "工作台"
     }
   }, {
+    "path": "pages/work/history",
+    "style": {
+      "navigationBarTitleText": "修复记录"
+    }
+  }, {
     "path": "pages/mine/index",
     "style": {
       "navigationBarTitleText": "我的"

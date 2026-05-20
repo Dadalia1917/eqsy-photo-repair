@@ -1,79 +1,91 @@
 <template>
-  <div class="app-container">
-    <el-alert title="志愿服务工作台：先认领任务，再上传服务结果，最后完成回传。" type="info" :closable="false" class="mb12" />
+  <div>
+    <div class="page-hero">
+      <div class="hero-text">
+        <div class="hero-title">志愿服务工作台</div>
+        <div class="hero-sub">认领任务 → 上传修复结果 → 完成回传</div>
+      </div>
+      <div class="hero-badge">{{ total }} 个任务</div>
+    </div>
 
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="任务编号" prop="taskNo">
-        <el-input v-model="queryParams.taskNo" placeholder="请输入任务编号" clearable style="width: 220px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="全部" clearable style="width: 180px">
-          <el-option label="等待认领" value="WAIT_STUDENT" />
-          <el-option label="人工处理中" value="MANUAL_PROCESSING" />
-          <el-option label="已完成" value="COMPLETED" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+    <div class="app-container">
+      <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
+        <el-form-item label="任务编号" prop="taskNo">
+          <el-input v-model="queryParams.taskNo" placeholder="请输入任务编号" clearable style="width: 220px" @keyup.enter="handleQuery" />
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="queryParams.status" placeholder="全部" clearable style="width: 180px">
+            <el-option label="等待认领" value="WAIT_STUDENT" />
+            <el-option label="人工处理中" value="MANUAL_PROCESSING" />
+            <el-option label="已完成" value="COMPLETED" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
 
-    <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
 
-    <el-table v-loading="loading" :data="taskList">
-      <el-table-column label="编号" prop="taskId" width="80" align="center" />
-      <el-table-column label="任务编号" prop="taskNo" min-width="200" />
-      <el-table-column label="提交用户" prop="userName" width="120" align="center" />
-      <el-table-column label="源文件" min-width="220">
-        <template #default="scope">
-          <div v-if="parseDownloadUrls(scope.row.sourceUrls).length > 0" class="file-links">
-            <el-link
-              v-for="(url, idx) in parseDownloadUrls(scope.row.sourceUrls)"
-              :key="`source-${scope.row.taskId}-${idx}`"
-              :href="url"
-              type="primary"
-              target="_blank"
-            >原图{{ idx + 1 }}</el-link>
-          </div>
-          <span v-else class="text-grey">文件不可用</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="用户需求" prop="remark" min-width="260" show-overflow-tooltip>
-        <template #default="scope">
-          <span>{{ scope.row.remark || '未填写' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" prop="status" width="140" align="center" />
-      <el-table-column label="当前进度" width="170" align="center">
-        <template #default="scope">
-          <el-progress :percentage="scope.row.progress || 0" :stroke-width="12" />
-        </template>
-      </el-table-column>
-      <el-table-column label="结果文件" min-width="220">
-        <template #default="scope">
-          <div v-if="parseDownloadUrls(scope.row.resultUrls).length > 0" class="file-links">
-            <el-link
-              v-for="(url, idx) in parseDownloadUrls(scope.row.resultUrls)"
-              :key="`result-${scope.row.taskId}-${idx}`"
-              :href="url"
-              type="success"
-              target="_blank"
-            >结果{{ idx + 1 }}</el-link>
-          </div>
-          <span v-else class="text-grey">未上传</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" width="300">
-        <template #default="scope">
-          <el-button link type="primary" @click="handleClaim(scope.row)" v-hasPermi="['repair:task:claim']">认领</el-button>
-          <el-button link type="warning" @click="handleOpenUpload(scope.row)" v-hasPermi="['repair:task:edit']">上传结果</el-button>
-          <el-button link type="success" @click="handleFinish(scope.row)" v-hasPermi="['repair:task:edit']">完成回传</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+      <el-table v-loading="loading" :data="taskList">
+        <el-table-column label="编号" prop="taskId" width="80" align="center" />
+        <el-table-column label="任务编号" prop="taskNo" min-width="200" />
+        <el-table-column label="提交用户" prop="userName" width="120" align="center" />
+        <el-table-column label="源文件" min-width="160">
+          <template #default="scope">
+            <div v-if="parseDownloadUrls(scope.row.sourceUrls).length > 0" class="file-links">
+              <el-link
+                v-for="(url, idx) in parseDownloadUrls(scope.row.sourceUrls)"
+                :key="`source-${scope.row.taskId}-${idx}`"
+                :href="url"
+                type="primary"
+                target="_blank"
+              >原图{{ idx + 1 }}</el-link>
+            </div>
+            <span v-else class="text-grey">文件不可用</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="用户需求" prop="remark" min-width="180" show-overflow-tooltip>
+          <template #default="scope">
+            <span>{{ scope.row.remark || '未填写' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="140" align="center">
+          <template #default="scope">
+            <el-tag :type="statusTagType(scope.row.status)">{{ formatStatus(scope.row.status) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="当前进度" width="140" align="center">
+          <template #default="scope">
+            <el-progress :percentage="scope.row.progress || 0" :stroke-width="12" />
+          </template>
+        </el-table-column>
+        <el-table-column label="结果文件" min-width="150">
+          <template #default="scope">
+            <div v-if="parseDownloadUrls(scope.row.resultUrls).length > 0" class="file-links">
+              <el-link
+                v-for="(url, idx) in parseDownloadUrls(scope.row.resultUrls)"
+                :key="`result-${scope.row.taskId}-${idx}`"
+                :href="url"
+                type="success"
+                target="_blank"
+              >结果{{ idx + 1 }}</el-link>
+            </div>
+            <span v-else class="text-grey">未上传</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" width="240" fixed="right">
+          <template #default="scope">
+            <el-button link type="primary" @click="handleClaim(scope.row)" v-hasPermi="['repair:task:claim']">认领</el-button>
+            <el-button link type="warning" @click="handleOpenUpload(scope.row)" v-hasPermi="['repair:task:edit']">上传结果</el-button>
+            <el-button link type="success" @click="handleFinish(scope.row)" v-hasPermi="['repair:task:edit']">完成回传</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <el-dialog title="上传修复结果" v-model="openUpload" width="680px" append-to-body>
       <el-form label-width="110px">
@@ -249,6 +261,20 @@ function handleFinish(row) {
   })
 }
 
+const statusMap = {
+  WAIT_STUDENT: { label: '等待认领', type: 'warning' },
+  MANUAL_PROCESSING: { label: '处理中', type: 'primary' },
+  COMPLETED: { label: '已完成', type: 'success' }
+}
+
+function formatStatus(status) {
+  return statusMap[status]?.label || status
+}
+
+function statusTagType(status) {
+  return statusMap[status]?.type || 'info'
+}
+
 function buildDownloadUrl(url) {
   const value = (url || '').trim()
   if (!value) {
@@ -277,12 +303,75 @@ getList()
 </script>
 
 <style scoped>
-.mb12 {
-  margin-bottom: 12px;
+.page-wrap { padding: 0; }
+
+.page-hero {
+  background: linear-gradient(135deg, #1a6b5e 0%, #3eb49f 100%);
+  padding: 24px 24px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 0 0 16px 16px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
 }
-.text-grey {
-  color: #909399;
+
+.page-hero::before {
+  content: '';
+  position: absolute;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  top: -60px; right: 80px;
 }
+
+.hero-text { position: relative; z-index: 1; }
+
+.hero-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.hero-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.8);
+}
+
+.hero-badge {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+}
+
+.page-body { padding: 0 16px 20px; }
+
+.search-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 20px 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(23, 67, 62, 0.06);
+}
+
+.table-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(23, 67, 62, 0.06);
+}
+
+.text-grey { color: #909399; }
+
+.video-preview { margin-top: 8px; }
+
 .file-links {
   display: flex;
   flex-wrap: wrap;

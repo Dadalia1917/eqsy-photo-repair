@@ -1,4 +1,13 @@
 <template>
+  <div>
+    <div class="page-hero">
+      <div class="hero-text">
+        <div class="hero-title">服务任务管理</div>
+        <div class="hero-sub">查看和管理所有社区老人的照片修复任务</div>
+      </div>
+      <div class="hero-badge">共 {{ total }} 条任务</div>
+    </div>
+
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
       <el-form-item label="任务编号" prop="taskNo">
@@ -27,7 +36,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="taskList">
+    <el-table v-loading="loading" :data="taskList" stripe>
       <el-table-column label="编号" align="center" prop="taskId" width="80" />
       <el-table-column label="任务编号" align="center" prop="taskNo" width="210" />
       <el-table-column label="用户" align="center" prop="userName" width="120" />
@@ -73,6 +82,7 @@
     </el-table>
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+  </div>
   </div>
 </template>
 
@@ -168,9 +178,79 @@ getList()
 </script>
 
 <style scoped>
+.page-wrap {
+  padding: 0;
+}
+
+.page-hero {
+  background: linear-gradient(135deg, #1a6b5e 0%, #3eb49f 100%);
+  padding: 24px 24px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 0 0 16px 16px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-hero::before {
+  content: '';
+  position: absolute;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  top: -60px; right: 80px;
+}
+
+.hero-text { position: relative; z-index: 1; }
+
+.hero-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.hero-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.8);
+}
+
+.hero-badge {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+}
+
+.page-body {
+  padding: 0 16px 20px;
+}
+
+.search-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 20px 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(23, 67, 62, 0.06);
+}
+
+.table-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(23, 67, 62, 0.06);
+}
+
 .text-grey {
   color: #909399;
 }
+
 .file-links {
   display: flex;
   flex-wrap: wrap;
