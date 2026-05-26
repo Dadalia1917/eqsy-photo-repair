@@ -462,6 +462,33 @@ docker compose ps
 - 如果你需要修改 Docker 环境下的上传目录，请同时修改 `.env` 中的 `RUOYI_PROFILE`，不要只改其中一处。
 - Docker 部署场景下，`RUOYI_PROFILE` 会作为显式覆盖项生效，优先级高于 Windows/Linux 自动切换配置。
 
+### Docker 镜像拉取失败（国内服务器）
+
+中国云服务器（英迈云、阿里云、腾讯云等）直连 Docker Hub 经常失败，报 `failed to resolve source metadata`。**在服务器执行以下命令后再重新构建**：
+
+```bash
+sudo tee /etc/docker/daemon.json <<'EOF'
+{
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://hub-mirror.c.163.com",
+    "https://mirror.baidubce.com"
+  ]
+}
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+配置完成后重新构建：
+
+```bash
+docker compose build --no-cache ruoyi-admin
+docker compose up -d
+```
+
+> **提示**：本项目 `Dockerfile` 已改用 Alpine 变体（`eclipse-temurin:17-jre-alpine` / `maven:3.9-eclipse-temurin-17-alpine`），镜像体积约 180 MB（原版约 380 MB），在国内拉取更快。如配置了加速器仍失败，可尝试阿里云个人镜像加速地址（需登录阿里云容器镜像服务获取专属域名）。
+
 ### Docker 常见问题补充（v1.6.0）
 
 - `ruoyi-docker/.env.example` 仅作为模板，`WECHAT_SECRET` 必须在 `.env` 中改成你自己的真实密钥；不要把真实密钥提交到仓库。
@@ -494,31 +521,34 @@ docker compose ps
 
 ### 2026.5.20（v2.0.0）
 
-#### 小程序 UI 全面适老化重构
+#### 小程序 UI 整体优化
 
-- 小程序登录页（`pages/login.vue`）重新布局：账号密码表单置顶为主入口，每个字段新增标签，「登录」按钮增大加粗；微信一键登录移至底部作为次选入口，图标改用 `uni-icons type="weixin"`。
-- 首页（`pages/index.vue`）适老化：操作主标题 40rpx、描述文字 28rpx、使用步骤说明 32rpx，统计标签字号增大。
-- 工作台（`pages/work/index.vue`）适老化：步骤文字 38rpx、上传缩略图改为 2 列大图、修复结果由网格改为**全宽垂直单列**（每张带序号标签），移除干扰性 `&gt;` 字符。
-- 历史记录（`pages/work/history.vue`）全面重构：删除原始/修复分组网格，改为**逐张对比模式**（原始照片在上、修复照片在下，带「第 N 张」序号），修复照片加绿色边框与阴影，处理中显示虚线占位框。
-- 修复 `pages.json` 中"我的"页面缺失 `path` 属性导致 Tab 无法跳转的问题。
-- 全局修复 `<style scoped>` 中 SCSS 嵌套语法（`&.class`、嵌套选择器）导致小程序编译/白屏的问题，改为平铺选择器写法。
+- 登录页（`pages/login.vue`）简化为卡片式布局：账号密码表单居中卡片，微信一键登录移至顶部切换栏，协议勾选保留，样式更清爽。
+- 首页（`pages/index.vue`）简化：去掉 Hero 区，改为白色卡片展示 logo + 口号 + 累计修复数量，操作按钮更突出（110rpx 高、42rpx 字体）。
+- 工作台（`pages/work/index.vue`）重新布局：上传/留言/结果三步卡片化展示，移除历史记录快捷入口（`goToHistory` 方法和按钮一并删除）。
+- **删除** `pages/work/history.vue`（修复记录页），同步从 `pages.json` TabBar 路由中移除，`mine/index.vue` 的历史入口一并删除。
+- `pages/mine/index.vue` 移除"我的修复记录"快捷卡片，简化菜单为：编辑资料 / 修改密码 / 常见问题 / 关于我们 / 应用设置。
 
-#### 后台管理 UI 升级
+#### 后台管理 UI 调整
 
-- 后台登录页（`ruoyi-ui/src/views/login.vue`）恢复左右分栏设计，修复输入框高度（42px），移除过大的 `size="large"` 属性。
-- 任务管理页（`views/repair/task/index.vue`）与志愿者工作台（`views/repair/student/index.vue`）新增绿色渐变 Hero 横幅，搜索区和表格区改为白色圆角卡片样式。
-- 志愿者工作台「操作」列改为 `fixed="right"` 固定在右侧，缩减各列宽度，确保按钮始终可见。
-- 修复两个后台页 Vue 模板单根元素问题（改为单 `div` 包裹 hero + `app-container`），解决切换 Tab 出现白屏的问题。
-
-#### 后台看板升级
-
-- 首页数据看板（`ruoyi-ui/src/views/index.vue`）全面重构：Hero 横幅改为深绿渐变色；KPI 卡片新增彩色顶部色条、emoji 图标、38px 大字体，内容改为「累计服务任务、待认领、修复进行中、服务完成率」。
-- 引入 ECharts 5.x：任务状态分布由水平进度条改为**甜甜圈饼图**，悬停显示件数和占比；7天趋势由 SVG 折线改为**分组柱状图**（新增任务/完成任务），更直观。
-- 最近服务记录表新增「认领志愿者」列和进度条列，状态标签改为颜色区分版本（成功/警告/危险/信息）。
+- 后台登录页（`ruoyi-ui/src/views/login.vue`）恢复 RuoYi 原始居中卡片样式，默认填充 `admin/admin123`，背景使用 `login-background.jpg`。
+- 注册页（`ruoyi-ui/src/views/register.vue`）同步恢复原始卡片样式，与登录页背景一致。
+- 任务管理页（`views/repair/task/index.vue`）移除 Hero 横幅，恢复标准 `app-container`，去掉 `stripe` 属性。
+- 志愿者工作台（`views/repair/student/index.vue`）移除 Hero 横幅，改为顶部 `el-alert` 提示操作步骤；移除自定义状态格式化函数（`formatStatus`/`statusTagType`），状态列直接显示原始值。
 
 #### 后端
 
-- 任务编号格式改为 `yyyyMMdd-taskId`（如 `20260520-42`），先插入获取自增 ID 再拼接更新，`submitTask` 方法加 `@Transactional` 保证原子性。
+- 任务编号生成改为 `EQSY + 毫秒时间戳 + 4位随机数字`（如 `EQSY17482837401234`），通过 `buildTaskNo()` 在插入前生成，不再依赖自增 ID 二次更新；移除 `@Transactional`。
+- 引入 `RandomStringUtils.randomNumeric(4)` 增加随机性，避免同一毫秒并发冲突。
+
+#### Docker 基础镜像修复
+
+- **根本原因**：中国云服务器无法从 Docker Hub 拉取 `eclipse-temurin:17-jre` 和 `maven:3.9.9-eclipse-temurin-17`，构建时报 `failed to resolve source metadata`。
+- **修复**：将 Dockerfile 两个阶段均改为 Alpine 变体：
+  - Builder：`maven:3.9.9-eclipse-temurin-17` → `maven:3.9-eclipse-temurin-17-alpine`
+  - Runtime：`eclipse-temurin:17-jre` → `eclipse-temurin:17-jre-alpine`
+- Alpine 变体镜像体积更小（约 180 MB vs 380 MB），在国内云服务器上拉取成功率更高。
+- **推荐同步配置 Docker 守护进程镜像加速**，见下方"Docker 常见问题"章节。
 
 ### 2026.4.22（v1.6.0 补充）
 
