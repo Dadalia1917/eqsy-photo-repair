@@ -1,8 +1,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY ruoyi-ui/package*.json ./
-RUN npm install
+COPY ruoyi-ui/package.json ruoyi-ui/package-lock.json ./
+RUN npm ci
 
 COPY ruoyi-ui/ ./
 ARG VITE_APP_BASE_API=/prod-api

@@ -38,7 +38,7 @@ server:
 # 日志配置
 logging:
   level:
-    com.ruoyi: debug
+    com.ruoyi: ${APP_LOG_LEVEL:info}
     org.springframework: warn
 
 # 用户配置
@@ -68,7 +68,7 @@ spring:
   devtools:
     restart:
       # 热部署开关
-      enabled: true
+      enabled: ${SPRING_DEVTOOLS_RESTART_ENABLED:false}
   data:
     # redis 配置
     redis:
@@ -79,7 +79,7 @@ spring:
       # 数据库索引
       database: 0
       # 密码
-      password:
+      password: ${REDIS_PASSWORD:}
       # 连接超时时间
       timeout: 10s
       lettuce:
@@ -98,7 +98,7 @@ token:
   # 令牌自定义标识
   header: Authorization
   # 令牌密钥
-  secret: abcdefghijklmnopqrstuvwxyz
+  secret: ${TOKEN_SECRET:change-this-token-secret-before-production}
   # 令牌有效期（默认30分钟）
   expireTime: 30
 
@@ -121,8 +121,9 @@ pagehelper:
 springdoc:
   api-docs:
     path: /v3/api-docs
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:true}
   swagger-ui:
-    enabled: true
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:true}
     path: /swagger-ui.html
     tags-sorter: alpha
   group-configs:
@@ -134,7 +135,11 @@ springdoc:
 # 微信小程序配置
 wechat:
   appid: ${WECHAT_APPID:wx1ab607ec500707c0}
-  secret: ${WECHAT_SECRET:4b39d4134c5742cfc5ec554f2d1ef45b}
+  secret: ${WECHAT_SECRET:}
+
+# 仅供无真实短信供应商的本地联调；生产环境必须保持关闭
+sms:
+  mock-enabled: ${SMS_MOCK_ENABLED:false}
 
 # 防盗链配置
 referer:

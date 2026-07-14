@@ -7,12 +7,13 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,14 +51,17 @@ import com.ruoyi.system.service.ISysUserService;
 public class SysLoginController
 {
     private static final String SMS_CODE_KEY = "sms_codes:";
-    private static final String DEFAULT_WX_PASSWORD = "123456";
     private static final String WX_ACCESS_TOKEN_CACHE_KEY = "wx:access_token";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Value("${wechat.appid}")
     private String wxAppId;
 
     @Value("${wechat.secret}")
     private String wxSecret;
+
+    @Value("${sms.mock-enabled:false}")
+    private boolean smsMockEnabled;
 
     @Autowired
     private SysLoginService loginService;
@@ -106,13 +110,18 @@ public class SysLoginController
     @PostMapping("/sendSmsCode")
     public AjaxResult sendSmsCode(@RequestBody Map<String, String> body)
     {
+        if (!smsMockEnabled)
+        {
+            return AjaxResult.error("短信登录尚未配置，请使用微信一键登录");
+        }
+
         String phone = body.get("phone");
         if (StringUtils.isEmpty(phone) || phone.length() != 11)
         {
             return AjaxResult.error("请输入正确的11位手机号");
         }
 
-        String code = String.format("%06d", new Random().nextInt(1000000));
+        String code = String.format("%06d", SECURE_RANDOM.nextInt(1000000));
         redisCache.setCacheObject(SMS_CODE_KEY + phone, code, 5, TimeUnit.MINUTES);
 
         AjaxResult ajax = AjaxResult.success("验证码发送成功");
@@ -127,6 +136,11 @@ public class SysLoginController
     @PostMapping("/smsLogin")
     public AjaxResult smsLogin(@RequestBody Map<String, String> body)
     {
+        if (!smsMockEnabled)
+        {
+            return AjaxResult.error("短信登录尚未配置，请使用微信一键登录");
+        }
+
         String phone = body.get("phone");
         String smsCode = body.get("smsCode");
 
@@ -281,7 +295,6 @@ public class SysLoginController
         // 2. 查找或自动注册用户
         SysUser user = userService.selectUserByWxOpenId(openId);
         Long wxDefaultRoleId = getWxDefaultRoleId();
-        boolean created = false;
         if (StringUtils.isNull(user))
         {
             user = new SysUser();
@@ -294,7 +307,8 @@ public class SysLoginController
             }
             user.setWxOpenId(openId);
             user.setStatus("0");
-            user.setPassword(SecurityUtils.encryptPassword(DEFAULT_WX_PASSWORD));
+            // 微信账号只能通过微信授权登录，随机密码用于阻断可预测的密码登录。
+            user.setPassword(SecurityUtils.encryptPassword(UUID.randomUUID().toString()));
             user.setCreateBy("wxLogin");
             if (wxDefaultRoleId != null)
             {
@@ -305,7 +319,6 @@ public class SysLoginController
             {
                 return AjaxResult.error("自动注册失败，请联系管理员");
             }
-            created = true;
         }
         else
         {
@@ -352,11 +365,6 @@ public class SysLoginController
         String token = tokenService.createToken(loginUser);
         AjaxResult ajax = AjaxResult.success();
         ajax.put(Constants.TOKEN, token);
-        if (created)
-        {
-            ajax.put("defaultUserName", user.getUserName());
-            ajax.put("defaultPassword", DEFAULT_WX_PASSWORD);
-        }
         return ajax;
     }
 

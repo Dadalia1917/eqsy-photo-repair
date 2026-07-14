@@ -98,8 +98,13 @@ public class SysLoginService
         {
             AuthenticationContextHolder.clearContext();
         }
-        AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_SUCCESS, MessageUtils.message("user.login.success")));
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        if (loginUser.getUser() != null && "wxLogin".equals(loginUser.getUser().getCreateBy()))
+        {
+            AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_FAIL, "微信账号禁止密码登录"));
+            throw new ServiceException("请使用微信小程序一键登录");
+        }
+        AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_SUCCESS, MessageUtils.message("user.login.success")));
         correctWebRegisterRole(loginUser);
         recordLoginInfo(loginUser.getUserId());
         // 生成token

@@ -1,0 +1,12 @@
+.git
+.github
+.idea
+.cunzhi-memory
+**/node_modules
+**/target
+**/dist
+**/unpackage
+**/.DS_Store
+README.pdf
+ruoyi-app
+sql
